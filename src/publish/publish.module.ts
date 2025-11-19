@@ -5,9 +5,11 @@ import { PublishInstagramService } from './services/publish-instagram.service';
 import { PublishLinkedinService } from './services/publish-linkedin.service';
 import { PublishWhatsappService } from './services/publish-whatsapp.service';
 import { PublishTiktokService } from './services/publish-tiktok.service';
+import { PublishTiktokAuthController } from './controllers/publish-tiktok-auth.controller';
 
 @Module({
   imports: [ConfigModule],
+  controllers: [PublishTiktokAuthController],
   providers: [
     PublishFacebookService,
     PublishInstagramService,
