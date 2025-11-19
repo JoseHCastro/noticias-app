@@ -1,6 +1,8 @@
 import { Body, Controller, Post, Get, Delete, Param, UseGuards, ValidationPipe, Request } from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
-import { SocialMediaPublisherService } from './social-media-publisher.service';
+import { PublishFacebookService } from '../publish/services/publish-facebook.service';
+import { PublishInstagramService } from '../publish/services/publish-instagram.service';
+import { PublishLinkedinService } from '../publish/services/publish-linkedin.service';
 import { SendMessageDto, CreateChatDto } from './dto/chat.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -9,7 +11,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class ChatbotController {
   constructor(
     private chatbotService: ChatbotService,
-    private socialMediaPublisher: SocialMediaPublisherService,
+    private publishFacebookService: PublishFacebookService,
+    private publishInstagramService: PublishInstagramService,
+    private publishLinkedinService: PublishLinkedinService,
   ) {}
 
   // ENVIAR MENSAJE AL CHAT (principal endpoint)
@@ -193,11 +197,19 @@ export class ChatbotController {
     }
 
     // Publicar en las plataformas especificadas
-    const results = await this.socialMediaPublisher.publishToSocialMedia(
-      body.platforms,
-      post.content,
-      post.imageUrl,
-    );
+    const results: any[] = [];
+    for (const platform of body.platforms) {
+      if (platform === 'facebook') {
+        const result = await this.publishFacebookService.publish(post.content, post.imageUrl);
+        results.push(result);
+      } else if (platform === 'instagram') {
+        const result = await this.publishInstagramService.publish(post.content, post.imageUrl);
+        results.push(result);
+      } else if (platform === 'linkedin') {
+        const result = await this.publishLinkedinService.publish(post.content, post.imageUrl);
+        results.push(result);
+      }
+    }
 
     return {
       postId: post.id,
@@ -223,7 +235,7 @@ export class ChatbotController {
     // Publicar post de Facebook
     const facebookPost = posts.find(p => p.platform === 'facebook');
     if (facebookPost && facebookPost.imageUrl) {
-      const fbResult = await this.socialMediaPublisher.publishToFacebook(
+      const fbResult = await this.publishFacebookService.publish(
         facebookPost.content,
         facebookPost.imageUrl,
       );
@@ -233,7 +245,7 @@ export class ChatbotController {
     // Publicar post de Instagram
     const instagramPost = posts.find(p => p.platform === 'instagram');
     if (instagramPost && instagramPost.imageUrl) {
-      const igResult = await this.socialMediaPublisher.publishToInstagram(
+      const igResult = await this.publishInstagramService.publish(
         instagramPost.content,
         instagramPost.imageUrl,
       );
