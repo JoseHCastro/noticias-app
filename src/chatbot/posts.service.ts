@@ -112,7 +112,7 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
     }
   }
 
-  // GENERAR LOS 5 POSTS AUTOMÁTICAMENTE (ahora usa textos pre-generados)
+  // GENERAR LOS 5 POSTS AUTOMÁTICAMENTE
   async generateAllPosts(
     message: string,
     userId: string,
