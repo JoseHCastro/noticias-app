@@ -303,4 +303,113 @@ export class TiktokTokenManualController {
       });
     }
   }
+
+  /**
+   * Endpoint para verificar qué usuario tiene el token actual
+   * GET /auth/tiktok/check-user
+   */
+  @Get('check-user')
+  async checkUser(@Res() res: Response) {
+    try {
+      const accessToken = this.configService.get<string>('TIKTOK_TOKEN');
+
+      if (!accessToken) {
+        return res.status(400).json({
+          error: 'TIKTOK_TOKEN no configurado',
+        });
+      }
+
+      console.log('[CHECK-USER] Consultando información del usuario...');
+
+      // Llamar a la API de TikTok para obtener info del usuario
+      const userInfoUrl = 'https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name,username';
+
+      const response = await fetch(userInfoUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      console.log('[CHECK-USER] Response status:', response.status);
+      console.log('[CHECK-USER] Response data:', JSON.stringify(data, null, 2));
+
+      if (!response.ok || data.error?.code !== 'ok') {
+        return res.send(`
+          <html>
+            <head><meta charset="UTF-8"><title>Error - Usuario TikTok</title></head>
+            <body style="font-family: Arial; padding: 40px; background: #f5f5f5;">
+              <div style="max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px;">
+                <h2 style="color: #e74c3c;">❌ Error al obtener información del usuario</h2>
+                <p><strong>Error Code:</strong> ${data.error?.code || 'unknown'}</p>
+                <p><strong>Message:</strong> ${data.error?.message || 'Sin mensaje'}</p>
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                  <strong>Respuesta completa:</strong>
+                  <pre style="background: #fff; padding: 10px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+                </div>
+              </div>
+            </body>
+          </html>
+        `);
+      }
+
+      const user = data.data?.user;
+
+      return res.send(`
+        <html>
+          <head><meta charset="UTF-8"><title>Usuario TikTok - Info</title></head>
+          <body style="font-family: Arial; padding: 40px; background: #f5f5f5;">
+            <div style="max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <h2 style="color: #27ae60;">✅ Información del Usuario con Token Actual</h2>
+              
+              ${user?.avatar_url ? `
+                <div style="text-align: center; margin: 20px 0;">
+                  <img src="${user.avatar_url}" alt="Avatar" style="width: 120px; height: 120px; border-radius: 60px; border: 3px solid #3498db;">
+                </div>
+              ` : ''}
+
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
+                <p><strong>👤 Display Name:</strong> ${user?.display_name || 'N/A'}</p>
+                <p><strong>🔑 Username:</strong> @${user?.username || 'N/A'}</p>
+                <p><strong>🆔 Open ID:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">${user?.open_id || 'N/A'}</code></p>
+                <p><strong>🔗 Union ID:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">${user?.union_id || 'N/A'}</code></p>
+              </div>
+
+              <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0;"><strong>⚠️ Importante:</strong></p>
+                <p style="margin: 5px 0 0 0; color: #856404;">
+                  Este es el usuario asociado al token actual. Si no coincide con @6ftsjc9, necesitas generar un nuevo token con la cuenta correcta.
+                </p>
+              </div>
+
+              <div style="margin-top: 30px; text-align: center;">
+                <a href="/auth/tiktok/login" 
+                   style="display: inline-block; padding: 12px 24px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">
+                  🔄 Generar Nuevo Token
+                </a>
+                <a href="/auth/tiktok/check-user" 
+                   style="display: inline-block; padding: 12px 24px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                  ↻ Recargar
+                </a>
+              </div>
+
+              <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; font-size: 12px; color: #666;">
+                <strong>Respuesta JSON completa:</strong>
+                <pre style="background: #fff; padding: 10px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('[CHECK-USER] Error:', error);
+      return res.status(500).json({
+        error: 'Error al consultar usuario',
+        message: error.message,
+      });
+    }
+  }
 }
