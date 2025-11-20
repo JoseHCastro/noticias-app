@@ -58,7 +58,7 @@ export class PublishTiktokService {
           photo_cover_index: 0,
           photo_images: [imageUrl], // Array de URLs de imágenes (máximo 35)
         },
-        post_mode: 'DIRECT_POST', // Publicar directamente (requiere scope video.publish)
+        post_mode: 'MEDIA_UPLOAD', // Usuario completa desde TikTok app (no requiere cuenta privada)
         media_type: 'PHOTO',
       };
 

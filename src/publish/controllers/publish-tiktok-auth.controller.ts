@@ -244,6 +244,9 @@ export class PublishTiktokAuthController {
 
     const data = await response.json();
     
+    // Log completo de lo que TikTok realmente devuelve
+    console.log('[OAUTH] Response de TikTok:', JSON.stringify(data, null, 2));
+    
     return data;
   }
 
