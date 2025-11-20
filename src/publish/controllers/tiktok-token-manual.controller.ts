@@ -1,4 +1,4 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Res, Query } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 
@@ -160,6 +160,147 @@ export class TiktokTokenManualController {
           </body>
         </html>
       `);
+    }
+  }
+
+  /**
+   * Endpoint para verificar el estado de un publish_id de TikTok
+   * GET /auth/tiktok/check-status?publish_id=p_inbox_url~v2.xxx
+   */
+  @Get('check-status')
+  async checkPublishStatus(
+    @Query('publish_id') publishId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      if (!publishId) {
+        return res.status(400).json({
+          error: 'Debes proporcionar un publish_id',
+          example: '/auth/tiktok/check-status?publish_id=p_inbox_url~v2.xxx',
+        });
+      }
+
+      const accessToken = this.configService.get<string>('TIKTOK_TOKEN');
+
+      if (!accessToken) {
+        return res.status(400).json({
+          error: 'TIKTOK_TOKEN no configurado',
+        });
+      }
+
+      // Llamar a la API de TikTok para verificar el estado
+      const statusUrl = `https://open.tiktokapis.com/v2/post/publish/status/fetch/?publish_id=${encodeURIComponent(publishId)}`;
+
+      console.log(`[CHECK-STATUS] Consultando estado de: ${publishId}`);
+      console.log(`[CHECK-STATUS] URL: ${statusUrl}`);
+
+      const response = await fetch(statusUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      console.log(`[CHECK-STATUS] Response status: ${response.status}`);
+      console.log(`[CHECK-STATUS] Response data:`, JSON.stringify(data, null, 2));
+
+      // Respuesta HTML bonita
+      const statusCode = data?.data?.status || 'UNKNOWN';
+      const failReason = data?.data?.fail_reason || 'N/A';
+      const errorCode = data?.error?.code || 'ok';
+      const errorMessage = data?.error?.message || '';
+
+      let statusColor = '#3498db';
+      let statusEmoji = '';
+      let statusText = 'Desconocido';
+
+      if (statusCode === 'PUBLISH_COMPLETE') {
+        statusColor = '#27ae60';
+        statusEmoji = '';
+        statusText = 'Publicado exitosamente';
+      } else if (statusCode === 'PROCESSING_UPLOAD') {
+        statusColor = '#f39c12';
+        statusEmoji = '';
+        statusText = 'Procesando upload';
+      } else if (statusCode === 'PROCESSING_DOWNLOAD') {
+        statusColor = '#f39c12';
+        statusEmoji = '';
+        statusText = 'Descargando imagen';
+      } else if (statusCode === 'SEND_TO_USER_INBOX') {
+        statusColor = '#3498db';
+        statusEmoji = '';
+        statusText = 'Enviado a inbox del usuario';
+      } else if (statusCode === 'FAILED') {
+        statusColor = '#e74c3c';
+        statusEmoji = '';
+        statusText = 'Falló';
+      }
+
+      return res.send(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>Estado de Publicación TikTok</title>
+          </head>
+          <body style="font-family: Arial; padding: 40px; background: #f5f5f5;">
+            <div style="max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <h2 style="color: ${statusColor};">${statusEmoji} Estado de Publicación</h2>
+              
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                <p><strong>Publish ID:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">${publishId}</code></p>
+                <p><strong>Estado:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span> (${statusCode})</p>
+                ${failReason !== 'N/A' ? `<p><strong>Razón de fallo:</strong> <span style="color: #e74c3c;">${failReason}</span></p>` : ''}
+              </div>
+
+              ${errorCode !== 'ok' ? `
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+                  <p style="margin: 0;"><strong>⚠️ Error API:</strong></p>
+                  <p style="margin: 5px 0 0 0; color: #856404;">Code: ${errorCode}</p>
+                  <p style="margin: 5px 0 0 0; color: #856404;">${errorMessage}</p>
+                </div>
+              ` : ''}
+
+              <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                <h3>📖 Posibles Estados:</h3>
+                <ul style="color: #666; line-height: 1.8;">
+                  <li><strong>PUBLISH_COMPLETE:</strong> Post publicado exitosamente</li>
+                  <li><strong>PROCESSING_UPLOAD:</strong> TikTok está procesando el upload</li>
+                  <li><strong>PROCESSING_DOWNLOAD:</strong> TikTok está descargando la imagen desde tu servidor</li>
+                  <li><strong>SEND_TO_USER_INBOX:</strong> Enviado al inbox del usuario (debe completar en la app)</li>
+                  <li><strong>FAILED:</strong> La publicación falló (ver fail_reason)</li>
+                </ul>
+              </div>
+
+              <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px;">
+                <p style="margin: 0; color: #1565c0;">
+                  💡 <strong>Tip:</strong> Si el estado es SEND_TO_USER_INBOX, el usuario debe abrir TikTok y completar la publicación desde sus notificaciones o borradores.
+                </p>
+              </div>
+
+              <div style="margin-top: 30px; text-align: center;">
+                <a href="/auth/tiktok/check-status?publish_id=${encodeURIComponent(publishId)}" 
+                   style="display: inline-block; padding: 12px 24px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                  🔄 Recargar Estado
+                </a>
+              </div>
+
+              <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; font-size: 12px; color: #666;">
+                <strong>Respuesta JSON completa:</strong>
+                <pre style="background: #fff; padding: 10px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('[CHECK-STATUS] Error:', error);
+      return res.status(500).json({
+        error: 'Error al consultar estado',
+        message: error.message,
+      });
     }
   }
 }
