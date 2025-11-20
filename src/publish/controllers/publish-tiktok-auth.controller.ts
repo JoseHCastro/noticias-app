@@ -100,7 +100,7 @@ export class PublishTiktokAuthController {
       return res.status(400).send(`
         <html>
           <body style="font-family: Arial; padding: 40px; text-align: center;">
-            <h1>❌ Error de Autorización</h1>
+            <h1> Error de Autorización</h1>
             <p><strong>Error:</strong> ${error}</p>
             <p><strong>Descripción:</strong> ${errorDescription || 'Sin descripción'}</p>
             <br>
@@ -135,10 +135,10 @@ export class PublishTiktokAuthController {
       // PASO 3: Intercambiar código por access_token
       const tokenData = await this.exchangeCodeForToken(code, req);
 
-      console.log('Token obtenido exitosamente');
-      console.log('Access Token:', tokenData.access_token.substring(0, 20) + '...');
-      console.log('Expira en:', tokenData.expires_in, 'segundos');
-      console.log('Refresh Token:', tokenData.refresh_token?.substring(0, 20) + '...');
+      console.log(' Token obtenido exitosamente');
+      console.log(' Access Token:', tokenData.access_token.substring(0, 20) + '...');
+      console.log(' Expira en:', tokenData.expires_in, 'segundos');
+      console.log(' Refresh Token:', tokenData.refresh_token?.substring(0, 20) + '...');
 
       // Mostrar al usuario el token obtenido
       return res.send(`

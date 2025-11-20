@@ -1,0 +1,6 @@
+# Ignorar imágenes subidas
+uploads/
+*.jpg
+*.png
+*.webp
+*.gif

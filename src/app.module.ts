@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
+import { StorageModule } from './storage/storage.module';
 import { User } from './users/user.entity';
 import { Post } from './chatbot/entities/post.entity';
 import { Chat } from './chatbot/entities/chat.entity';
@@ -35,6 +36,7 @@ import { ChatMessage } from './chatbot/entities/chat-message.entity';
     AuthModule,
     UsersModule,
     ChatbotModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -8,12 +8,14 @@ import { Post } from './entities/post.entity';
 import { Chat } from './entities/chat.entity';
 import { ChatMessage } from './entities/chat-message.entity';
 import { PublishModule } from '../publish/publish.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([Post, Chat, ChatMessage]),
     PublishModule,
+    StorageModule,
   ],
   controllers: [ChatbotController],
   providers: [ChatbotService, PostsService],

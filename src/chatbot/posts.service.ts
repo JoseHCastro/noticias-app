@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { Post } from './entities/post.entity';
+import { StorageService } from '../storage/storage.service';
 
 interface GeneratedPost {
   platform: string;
@@ -29,6 +30,7 @@ Información de contexto:
 
   constructor(
     private configService: ConfigService,
+    private storageService: StorageService,
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
   ) {
@@ -122,9 +124,14 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
     const posts: GeneratedPost[] = [];
 
     // LLAMADA 2/2: Generar 1 sola imagen compartida para todas las plataformas (incluido TikTok)
-    console.log(' [LLAMADA 2/2] Generando imagen compartida...');
+    console.log('🎨 [LLAMADA 2/2] Generando imagen compartida...');
     const sharedImageData = await this.generateImage(message);
-    console.log(' [LLAMADA 2/2] Imagen generada:', sharedImageData.imageUrl.substring(0, 80) + '...');
+    console.log('✅ [LLAMADA 2/2] Imagen generada en OpenAI:', sharedImageData.imageUrl.substring(0, 80) + '...');
+    
+    // Descargar y guardar imagen en nuestro servidor
+    console.log('💾 Guardando imagen en servidor local...');
+    const localImageUrl = await this.storageService.downloadAndSaveImage(sharedImageData.imageUrl);
+    console.log('✅ Imagen disponible en:', localImageUrl);
 
     // Crear posts con textos pre-generados o generar nuevos (fallback)
     const platforms = ['instagram', 'facebook', 'tiktok', 'linkedin', 'whatsapp'];
@@ -137,7 +144,7 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
       const post: GeneratedPost = {
         platform,
         content,
-        imageUrl: sharedImageData.imageUrl,
+        imageUrl: localImageUrl, // URL de nuestro servidor
         imagePrompt: sharedImageData.prompt,
       };
 

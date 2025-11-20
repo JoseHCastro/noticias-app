@@ -8,7 +8,9 @@ import { PublishTiktokService } from './services/publish-tiktok.service';
 import { PublishTiktokAuthController } from './controllers/publish-tiktok-auth.controller';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [
+    ConfigModule,
+  ],
   controllers: [PublishTiktokAuthController],
   providers: [
     PublishFacebookService,
