@@ -40,9 +40,9 @@ export class StorageController {
    * Endpoint de verificación para TikTok (método signature file)
    * GET /tiktokzytVh8CPUg5DvrjPa6ibZmnzb6XdMq4N.txt
    */
-  @Get('tiktokzytVh8CPUg5DvrjPa6ibZmnzb6XdMq4N.txt')
+  @Get('tiktok512oyOb3aLOwUzoVWFE5lqztaEGUuUGL.txt')
   tiktokVerificationFile(@Res() res: Response) {
-    const verificationContent = 'tiktok-developers-site-verification=zytVh8CPUg5DvrjPa6ibZmnzb6XdMq4N';
+    const verificationContent = 'tiktok-developers-site-verification=512oyOb3aLOwUzoVWFE5lqztaEGUuUGL';
     
     res.setHeader('Content-Type', 'text/plain');
     res.send(verificationContent);
