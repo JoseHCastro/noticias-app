@@ -11,13 +11,13 @@ export class PublishTiktokService {
     this.tiktokToken = this.configService.get<string>('TIKTOK_TOKEN');
 
     if (!this.tiktokToken) {
-      console.warn('⚠️ TIKTOK_TOKEN no configurado en .env');
+      console.warn(' TIKTOK_TOKEN no configurado en .env');
     }
   }
 
   async publish(caption: string, imageUrl: string): Promise<PublishResult> {
     try {
-      console.log('📱 Publicando en TikTok...');
+      console.log(' Publicando en TikTok...');
 
       if (!this.tiktokToken) {
         return {
@@ -67,7 +67,7 @@ export class PublishTiktokService {
 
       // Verificar errores de la API de TikTok
       if (data.error && data.error.code !== 'ok') {
-        console.error('❌ Error de TikTok API:', data.error.message);
+        console.error(' Error de TikTok API:', data.error.message);
         return {
           success: false,
           platform: 'tiktok',
@@ -76,7 +76,7 @@ export class PublishTiktokService {
       }
 
       if (!response.ok || !data.data?.publish_id) {
-        console.error('❌ Error al publicar en TikTok:', data);
+        console.error(' Error al publicar en TikTok:', data);
         return {
           success: false,
           platform: 'tiktok',
@@ -84,8 +84,8 @@ export class PublishTiktokService {
         };
       }
 
-      console.log('✅ Publicado en TikTok exitosamente');
-      console.log(`📋 Publish ID: ${data.data.publish_id}`);
+      console.log(' Publicado en TikTok exitosamente');
+      console.log(` Publish ID: ${data.data.publish_id}`);
 
       return {
         success: true,
@@ -93,7 +93,7 @@ export class PublishTiktokService {
         postId: data.data.publish_id,
       };
     } catch (error) {
-      console.error('❌ Error al publicar en TikTok:', error.message);
+      console.error(' Error al publicar en TikTok:', error.message);
       return {
         success: false,
         platform: 'tiktok',
