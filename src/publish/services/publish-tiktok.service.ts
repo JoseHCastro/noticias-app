@@ -49,7 +49,7 @@ export class PublishTiktokService {
         post_info: {
           title: caption.substring(0, 90), // Máximo 90 caracteres para título
           description: caption.substring(0, 4000), // Máximo 4000 caracteres
-          privacy_level: 'MUTUAL_FOLLOW_FRIENDS', // Solo amigos mutuos - funciona con DIRECT_POST en sandbox
+          privacy_level: 'SELF_ONLY', // Apps no auditadas SOLO pueden usar SELF_ONLY con DIRECT_POST
           disable_comment: false,
           auto_add_music: true,
         },
@@ -58,7 +58,7 @@ export class PublishTiktokService {
           photo_cover_index: 0,
           photo_images: [imageUrl], // Array de URLs de imágenes (máximo 35)
         },
-        post_mode: 'DIRECT_POST', // Publicación automática con cuenta privada
+        post_mode: 'DIRECT_POST', // Publicación automática - solo funciona con SELF_ONLY en sandbox
         media_type: 'PHOTO',
       };
 
