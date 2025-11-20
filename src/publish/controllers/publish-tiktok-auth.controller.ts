@@ -68,6 +68,8 @@ export class PublishTiktokAuthController {
     authUrl.searchParams.append('state', state);
     authUrl.searchParams.append('code_challenge', codeChallenge);
     authUrl.searchParams.append('code_challenge_method', 'S256');
+    // Forzar nueva autorización (no usar token cacheado)
+    authUrl.searchParams.append('prompt', 'consent');
 
     console.log('Iniciando flujo OAuth de TikTok con PKCE...');
     console.log('Redirect URI:', this.redirectUri);
