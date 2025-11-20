@@ -148,12 +148,10 @@ export class ChatbotService {
       publishResults.push(result);
     }
 
-    // TikTok - Limitado por Sandbox (solo muestra Status 200 pero no publica)
+    // TikTok - INTENTANDO PUBLICAR (puede fallar por limitaciones de Sandbox)
     const tiktokPost = posts.find(p => p.platform === 'tiktok');
     if (tiktokPost && tiktokPost.imageUrl) {
-      console.log('[CHATBOT] Iniciando publicacion en TikTok...');
-      console.log('[CHATBOT] Caption:', tiktokPost.content.substring(0, 100) + '...');
-      console.log('[CHATBOT] ImageUrl:', tiktokPost.imageUrl);
+      console.log('[CHATBOT] Intentando publicar en TikTok...');
       const result = await this.publishTiktokService.publish(tiktokPost.content, tiktokPost.imageUrl);
       console.log('[CHATBOT] Resultado TikTok:', JSON.stringify(result));
       publishResults.push(result);
