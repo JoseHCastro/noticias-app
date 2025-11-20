@@ -42,7 +42,7 @@ export class PublishTiktokService {
       const payload = {
         post_info: {
           title: caption.substring(0, 150), // Máximo 150 caracteres para título en videos
-          privacy_level: 'SELF_ONLY', // Apps no auditadas SOLO pueden usar SELF_ONLY con DIRECT_POST
+          privacy_level: 'PUBLIC_TO_EVERYONE', // MEDIA_UPLOAD permite posts públicos
           disable_comment: false,
           disable_duet: false,
           disable_stitch: false,
@@ -52,7 +52,7 @@ export class PublishTiktokService {
           source: 'PULL_FROM_URL',
           video_url: videoUrl,
         },
-        post_mode: 'DIRECT_POST', // Publicación automática - solo funciona con SELF_ONLY en sandbox
+        post_mode: 'MEDIA_UPLOAD', // Usuario recibe notificación en TikTok para completar
         media_type: 'VIDEO',
       };
 
