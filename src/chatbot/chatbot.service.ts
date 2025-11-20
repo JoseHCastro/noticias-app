@@ -165,9 +165,7 @@ export class ChatbotService {
       ` Facebook - Con imagen\n` +
       ` TikTok - Con imagen\n` +
       ` LinkedIn - Con imagen\n` +
-      ` WhatsApp - Con imagen\n\n` +
-      ` Optimización: 1 sola imagen compartida para todas las plataformas (ahorro del 75%)\n` +
-      ` Llamadas API: 2 totales (validación+textos, imagen)\n\n` +
+      ` WhatsApp - Con imagen\n\n` +    
       ` Publicación automática:\n`;
 
     if (successfulPublishes > 0) {
