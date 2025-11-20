@@ -124,32 +124,31 @@ export class ChatbotService {
       postsGenerated: true,
     });
 
-    // PUBLICAR AUTOMÁTICAMENTE - SOLO TIKTOK (temporal para testing)
+    // PUBLICAR AUTOMÁTICAMENTE EN TODAS LAS PLATAFORMAS
     const publishResults: any[] = [];
     
-    // TEMPORALMENTE COMENTADO - Descomentar cuando TikTok funcione
-    // // Obtener el post de Facebook
-    // const facebookPost = posts.find(p => p.platform === 'facebook');
-    // if (facebookPost && facebookPost.imageUrl) {
-    //   const result = await this.publishFacebookService.publish(facebookPost.content, facebookPost.imageUrl);
-    //   publishResults.push(result);
-    // }
+    // Obtener el post de Facebook
+    const facebookPost = posts.find(p => p.platform === 'facebook');
+    if (facebookPost && facebookPost.imageUrl) {
+      const result = await this.publishFacebookService.publish(facebookPost.content, facebookPost.imageUrl);
+      publishResults.push(result);
+    }
 
-    // // Obtener el post de Instagram
-    // const instagramPost = posts.find(p => p.platform === 'instagram');
-    // if (instagramPost && instagramPost.imageUrl) {
-    //   const result = await this.publishInstagramService.publish(instagramPost.content, instagramPost.imageUrl);
-    //   publishResults.push(result);
-    // }
+    // Obtener el post de Instagram
+    const instagramPost = posts.find(p => p.platform === 'instagram');
+    if (instagramPost && instagramPost.imageUrl) {
+      const result = await this.publishInstagramService.publish(instagramPost.content, instagramPost.imageUrl);
+      publishResults.push(result);
+    }
 
-    // // Obtener el post de LinkedIn
-    // const linkedinPost = posts.find(p => p.platform === 'linkedin');
-    // if (linkedinPost && linkedinPost.imageUrl) {
-    //   const result = await this.publishLinkedinService.publish(linkedinPost.content, linkedinPost.imageUrl);
-    //   publishResults.push(result);
-    // }
+    // Obtener el post de LinkedIn
+    const linkedinPost = posts.find(p => p.platform === 'linkedin');
+    if (linkedinPost && linkedinPost.imageUrl) {
+      const result = await this.publishLinkedinService.publish(linkedinPost.content, linkedinPost.imageUrl);
+      publishResults.push(result);
+    }
 
-    // SOLO TIKTOK - Testing en producción
+    // TikTok - Limitado por Sandbox (solo muestra Status 200 pero no publica)
     const tiktokPost = posts.find(p => p.platform === 'tiktok');
     if (tiktokPost && tiktokPost.imageUrl) {
       console.log('[CHATBOT] Iniciando publicacion en TikTok...');

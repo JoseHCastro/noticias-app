@@ -21,7 +21,7 @@ export class PublishTiktokService {
       console.log('[TIKTOK] Token configurado:', this.tiktokToken ? 'SI' : 'NO');
       console.log('[TIKTOK] Token (primeros 20 chars):', this.tiktokToken?.substring(0, 20));
       console.log('[TIKTOK] Caption length:', caption.length);
-      console.log('[TIKTOK] ImageUrl:', imageUrl);
+      console.log('[TIKTOK] ImageUrl (ignorada - usando video):', imageUrl);
 
       if (!this.tiktokToken) {
         console.error('[TIKTOK] ERROR: Token no configurado');
@@ -31,35 +31,29 @@ export class PublishTiktokService {
           error: 'Token no configurado',
         };
       }
-
-      // Validar que la imagen esté públicamente accesible
-      if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-        console.error('[TIKTOK] ERROR: URL de imagen invalida:', imageUrl);
-        return {
-          success: false,
-          platform: 'tiktok',
-          error: 'La imagen debe ser una URL pública (http:// o https://',
-        };
-      }
       
       console.log('[TIKTOK] Validaciones pasadas OK');
 
-      // Payload para publicar foto en TikTok
+      // URL del video fijo que siempre se usará
+      const videoUrl = `${this.configService.get<string>('APP_URL')}/uploads/video.mp4`;
+      console.log('[TIKTOK] Video URL:', videoUrl);
+
+      // Payload para publicar video en TikTok
       const payload = {
         post_info: {
-          title: caption.substring(0, 90), // Máximo 90 caracteres para título
-          description: caption.substring(0, 4000), // Máximo 4000 caracteres
+          title: caption.substring(0, 150), // Máximo 150 caracteres para título en videos
           privacy_level: 'SELF_ONLY', // Apps no auditadas SOLO pueden usar SELF_ONLY con DIRECT_POST
           disable_comment: false,
-          auto_add_music: true,
+          disable_duet: false,
+          disable_stitch: false,
+          video_cover_timestamp_ms: 1000, // Thumbnail del video en 1 segundo
         },
         source_info: {
           source: 'PULL_FROM_URL',
-          photo_cover_index: 0,
-          photo_images: [imageUrl], // Array de URLs de imágenes (máximo 35)
+          video_url: videoUrl,
         },
         post_mode: 'DIRECT_POST', // Publicación automática - solo funciona con SELF_ONLY en sandbox
-        media_type: 'PHOTO',
+        media_type: 'VIDEO',
       };
 
       console.log('[TIKTOK] Payload preparado:', JSON.stringify(payload, null, 2));
