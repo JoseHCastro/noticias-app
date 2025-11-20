@@ -33,27 +33,21 @@ export class PublishTiktokService {
       }
       
       console.log('[TIKTOK] Validaciones pasadas OK');
+      console.log('[TIKTOK] Usando imagen generada por IA:', imageUrl);
 
-      // URL del video fijo que siempre se usará
-      const videoUrl = `${this.configService.get<string>('APP_URL')}/uploads/video.mp4`;
-      console.log('[TIKTOK] Video URL:', videoUrl);
-
-      // Payload para publicar video en TikTok
+      // Payload SIMPLIFICADO para publicar foto con MEDIA_UPLOAD
       const payload = {
         post_info: {
-          title: caption.substring(0, 150), // Máximo 150 caracteres para título en videos
-          privacy_level: 'PUBLIC_TO_EVERYONE', // MEDIA_UPLOAD permite posts públicos
+          title: caption.substring(0, 90),
+          privacy_level: 'MUTUAL_FOLLOW_FRIENDS', // Menos restrictivo que SELF_ONLY pero no público
           disable_comment: false,
-          disable_duet: false,
-          disable_stitch: false,
-          video_cover_timestamp_ms: 1000, // Thumbnail del video en 1 segundo
         },
         source_info: {
           source: 'PULL_FROM_URL',
-          video_url: videoUrl,
+          photo_images: [imageUrl],
         },
-        post_mode: 'MEDIA_UPLOAD', // Usuario recibe notificación en TikTok para completar
-        media_type: 'VIDEO',
+        post_mode: 'MEDIA_UPLOAD', // Borrador que aparece en la app
+        media_type: 'PHOTO',
       };
 
       console.log('[TIKTOK] Payload preparado:', JSON.stringify(payload, null, 2));
