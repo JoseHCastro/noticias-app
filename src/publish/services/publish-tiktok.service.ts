@@ -17,9 +17,14 @@ export class PublishTiktokService {
 
   async publish(caption: string, imageUrl: string): Promise<PublishResult> {
     try {
-      console.log(' Publicando en TikTok...');
+      console.log('[TIKTOK] Iniciando publicacion en TikTok');
+      console.log('[TIKTOK] Token configurado:', this.tiktokToken ? 'SI' : 'NO');
+      console.log('[TIKTOK] Token (primeros 20 chars):', this.tiktokToken?.substring(0, 20));
+      console.log('[TIKTOK] Caption length:', caption.length);
+      console.log('[TIKTOK] ImageUrl:', imageUrl);
 
       if (!this.tiktokToken) {
+        console.error('[TIKTOK] ERROR: Token no configurado');
         return {
           success: false,
           platform: 'tiktok',
@@ -29,12 +34,15 @@ export class PublishTiktokService {
 
       // Validar que la imagen esté públicamente accesible
       if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+        console.error('[TIKTOK] ERROR: URL de imagen invalida:', imageUrl);
         return {
           success: false,
           platform: 'tiktok',
-          error: 'La imagen debe ser una URL pública (http:// o https://)',
+          error: 'La imagen debe ser una URL pública (http:// o https://',
         };
       }
+      
+      console.log('[TIKTOK] Validaciones pasadas OK');
 
       // Payload para publicar foto en TikTok
       const payload = {
@@ -54,6 +62,9 @@ export class PublishTiktokService {
         media_type: 'PHOTO',
       };
 
+      console.log('[TIKTOK] Payload preparado:', JSON.stringify(payload, null, 2));
+      console.log('[TIKTOK] Enviando request a:', this.apiUrl);
+
       const response = await fetch(this.apiUrl, {
         method: 'POST',
         headers: {
@@ -63,11 +74,18 @@ export class PublishTiktokService {
         body: JSON.stringify(payload),
       });
 
+      console.log('[TIKTOK] Response status:', response.status);
+      console.log('[TIKTOK] Response statusText:', response.statusText);
+      console.log('[TIKTOK] Response ok:', response.ok);
+
       const data = await response.json();
+      console.log('[TIKTOK] Response data completo:', JSON.stringify(data, null, 2));
 
       // Verificar errores de la API de TikTok
       if (data.error && data.error.code !== 'ok') {
-        console.error(' Error de TikTok API:', data.error.message);
+        console.error('[TIKTOK] ERROR de API - Code:', data.error.code);
+        console.error('[TIKTOK] ERROR de API - Message:', data.error.message);
+        console.error('[TIKTOK] ERROR de API - Log ID:', data.error.log_id);
         return {
           success: false,
           platform: 'tiktok',
@@ -76,7 +94,8 @@ export class PublishTiktokService {
       }
 
       if (!response.ok || !data.data?.publish_id) {
-        console.error(' Error al publicar en TikTok:', data);
+        console.error('[TIKTOK] ERROR - Response no OK o sin publish_id');
+        console.error('[TIKTOK] ERROR - Data completo:', JSON.stringify(data));
         return {
           success: false,
           platform: 'tiktok',
@@ -84,8 +103,8 @@ export class PublishTiktokService {
         };
       }
 
-      console.log(' Publicado en TikTok exitosamente');
-      console.log(` Publish ID: ${data.data.publish_id}`);
+      console.log('[TIKTOK] EXITO - Publicado en TikTok exitosamente');
+      console.log('[TIKTOK] EXITO - Publish ID:', data.data.publish_id);
 
       return {
         success: true,
@@ -93,7 +112,8 @@ export class PublishTiktokService {
         postId: data.data.publish_id,
       };
     } catch (error) {
-      console.error(' Error al publicar en TikTok:', error.message);
+      console.error('[TIKTOK] EXCEPTION - Error al publicar:', error.message);
+      console.error('[TIKTOK] EXCEPTION - Stack:', error.stack);
       return {
         success: false,
         platform: 'tiktok',

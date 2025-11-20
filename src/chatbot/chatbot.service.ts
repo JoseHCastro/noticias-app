@@ -8,6 +8,7 @@ import { PostsService } from './posts.service';
 import { PublishFacebookService } from '../publish/services/publish-facebook.service';
 import { PublishInstagramService } from '../publish/services/publish-instagram.service';
 import { PublishLinkedinService } from '../publish/services/publish-linkedin.service';
+import { PublishTiktokService } from '../publish/services/publish-tiktok.service';
 
 @Injectable()
 export class ChatbotService {
@@ -16,6 +17,7 @@ export class ChatbotService {
     private publishFacebookService: PublishFacebookService,
     private publishInstagramService: PublishInstagramService,
     private publishLinkedinService: PublishLinkedinService,
+    private publishTiktokService: PublishTiktokService,
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
     @InjectRepository(Chat)
@@ -122,27 +124,39 @@ export class ChatbotService {
       postsGenerated: true,
     });
 
-    // PUBLICAR AUTOMÁTICAMENTE en Facebook, Instagram y LinkedIn
+    // PUBLICAR AUTOMÁTICAMENTE - SOLO TIKTOK (temporal para testing)
     const publishResults: any[] = [];
     
-    // Obtener el post de Facebook
-    const facebookPost = posts.find(p => p.platform === 'facebook');
-    if (facebookPost && facebookPost.imageUrl) {
-      const result = await this.publishFacebookService.publish(facebookPost.content, facebookPost.imageUrl);
-      publishResults.push(result);
-    }
+    // TEMPORALMENTE COMENTADO - Descomentar cuando TikTok funcione
+    // // Obtener el post de Facebook
+    // const facebookPost = posts.find(p => p.platform === 'facebook');
+    // if (facebookPost && facebookPost.imageUrl) {
+    //   const result = await this.publishFacebookService.publish(facebookPost.content, facebookPost.imageUrl);
+    //   publishResults.push(result);
+    // }
 
-    // Obtener el post de Instagram
-    const instagramPost = posts.find(p => p.platform === 'instagram');
-    if (instagramPost && instagramPost.imageUrl) {
-      const result = await this.publishInstagramService.publish(instagramPost.content, instagramPost.imageUrl);
-      publishResults.push(result);
-    }
+    // // Obtener el post de Instagram
+    // const instagramPost = posts.find(p => p.platform === 'instagram');
+    // if (instagramPost && instagramPost.imageUrl) {
+    //   const result = await this.publishInstagramService.publish(instagramPost.content, instagramPost.imageUrl);
+    //   publishResults.push(result);
+    // }
 
-    // Obtener el post de LinkedIn
-    const linkedinPost = posts.find(p => p.platform === 'linkedin');
-    if (linkedinPost && linkedinPost.imageUrl) {
-      const result = await this.publishLinkedinService.publish(linkedinPost.content, linkedinPost.imageUrl);
+    // // Obtener el post de LinkedIn
+    // const linkedinPost = posts.find(p => p.platform === 'linkedin');
+    // if (linkedinPost && linkedinPost.imageUrl) {
+    //   const result = await this.publishLinkedinService.publish(linkedinPost.content, linkedinPost.imageUrl);
+    //   publishResults.push(result);
+    // }
+
+    // SOLO TIKTOK - Testing en producción
+    const tiktokPost = posts.find(p => p.platform === 'tiktok');
+    if (tiktokPost && tiktokPost.imageUrl) {
+      console.log('[CHATBOT] Iniciando publicacion en TikTok...');
+      console.log('[CHATBOT] Caption:', tiktokPost.content.substring(0, 100) + '...');
+      console.log('[CHATBOT] ImageUrl:', tiktokPost.imageUrl);
+      const result = await this.publishTiktokService.publish(tiktokPost.content, tiktokPost.imageUrl);
+      console.log('[CHATBOT] Resultado TikTok:', JSON.stringify(result));
       publishResults.push(result);
     }
 
