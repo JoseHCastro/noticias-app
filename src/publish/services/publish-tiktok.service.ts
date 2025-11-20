@@ -49,7 +49,7 @@ export class PublishTiktokService {
         post_info: {
           title: caption.substring(0, 90), // Máximo 90 caracteres para título
           description: caption.substring(0, 4000), // Máximo 4000 caracteres
-          privacy_level: 'PUBLIC_TO_EVERYONE', // Público para la presentación
+          privacy_level: 'MUTUAL_FOLLOW_FRIENDS', // Solo amigos mutuos - funciona con DIRECT_POST en sandbox
           disable_comment: false,
           auto_add_music: true,
         },
@@ -58,7 +58,7 @@ export class PublishTiktokService {
           photo_cover_index: 0,
           photo_images: [imageUrl], // Array de URLs de imágenes (máximo 35)
         },
-        post_mode: 'MEDIA_UPLOAD', // Usuario completa desde TikTok app - ideal para demostración en vivo
+        post_mode: 'DIRECT_POST', // Publicación automática con cuenta privada
         media_type: 'PHOTO',
       };
 
