@@ -148,14 +148,12 @@ export class ChatbotService {
       publishResults.push(result);
     }
 
-    // TikTok - INTENTANDO PUBLICAR (puede fallar por limitaciones de Sandbox)
-    const tiktokPost = posts.find(p => p.platform === 'tiktok');
-    if (tiktokPost && tiktokPost.imageUrl) {
-      console.log('[CHATBOT] Intentando publicar en TikTok...');
-      const result = await this.publishTiktokService.publish(tiktokPost.content, tiktokPost.imageUrl);
-      console.log('[CHATBOT] Resultado TikTok:', JSON.stringify(result));
-      publishResults.push(result);
-    }
+    // TikTok - DESACTIVADO (apps Sandbox no pueden publicar hasta estar aprobadas)
+    // const tiktokPost = posts.find(p => p.platform === 'tiktok');
+    // if (tiktokPost && tiktokPost.imageUrl) {
+    //   const result = await this.publishTiktokService.publish(tiktokPost.content, tiktokPost.imageUrl);
+    //   publishResults.push(result);
+    // }
 
     // Contar publicaciones exitosas
     const successfulPublishes = publishResults.filter(r => r.success).length;

@@ -62,6 +62,8 @@ export class PublishInstagramService {
       const creationId = data1.id;
       console.log('Media container creado:', creationId);
 
+      await new Promise(resolve => setTimeout(resolve, 10000));
+
       // PASO 2: Publicar el contenedor
       console.log('Publicando en Instagram (Paso 2/2)...');
 
