@@ -22,7 +22,7 @@ export class PublishTiktokAuthController {
     this.clientKey = this.configService.get<string>('TIKTOK_CLIENT_KEY') || '';
     this.clientSecret = this.configService.get<string>('TIKTOK_CLIENT_SECRET') || '';
     this.redirectUri = this.configService.get<string>('TIKTOK_REDIRECT_URI') || 'http://localhost:3000/auth/tiktok/callback';
-    this.scopes = this.configService.get<string>('TIKTOK_SCOPES') || 'user.info.basic,video.publish';
+    this.scopes = this.configService.get<string>('TIKTOK_SCOPES') || 'user.info.basic,video.upload';
 
     if (!this.clientKey || !this.clientSecret) {
       console.warn('TikTok OAuth no configurado: CLIENT_KEY o CLIENT_SECRET faltantes');
