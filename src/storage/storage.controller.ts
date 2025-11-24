@@ -5,7 +5,7 @@ import * as fs from 'fs';
 
 @Controller()
 export class StorageController {
-  constructor(private readonly storageService: StorageService) {}
+  constructor(private readonly storageService: StorageService) { }
 
   /**
    * Endpoint para servir imágenes públicamente
@@ -28,8 +28,12 @@ export class StorageController {
     const ext = filename.split('.').pop()?.toLowerCase();
     const contentType = this.getContentType(ext);
 
-    res.setHeader('Content-Type', contentType);
+    // Usar res.type() es más seguro en Express
+    res.type(contentType);
     res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache 1 año
+
+    // Log para depuración en Render
+    console.log(`Serving file: ${filename} with Content-Type: ${contentType}`);
 
     // Enviar archivo
     const fileStream = fs.createReadStream(filepath);
@@ -43,7 +47,7 @@ export class StorageController {
   @Get('tiktok512oyOb3aLOwUzoVWFE5lqztaEGUuUGL.txt')
   tiktokVerificationFile(@Res() res: Response) {
     const verificationContent = 'tiktok-developers-site-verification=512oyOb3aLOwUzoVWFE5lqztaEGUuUGL';
-    
+
     res.setHeader('Content-Type', 'text/plain');
     res.send(verificationContent);
   }
