@@ -4,7 +4,7 @@ import type { Response } from 'express';
 
 @Controller('auth/tiktok')
 export class TiktokTokenManualController {
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) { }
 
   /**
    * Endpoint manual para refrescar el token de TikTok
@@ -307,6 +307,11 @@ export class TiktokTokenManualController {
   /**
    * Endpoint para verificar qué usuario tiene el token actual
    * GET /auth/tiktok/check-user
+   * 
+   * Solicita información completa del usuario incluyendo:
+   * - Información básica (open_id, union_id, avatar, display_name, username)
+   * - Información de perfil (bio, profile_deep_link, is_verified)
+   * - Estadísticas (follower_count, following_count, likes_count, video_count)
    */
   @Get('check-user')
   async checkUser(@Res() res: Response) {
@@ -319,10 +324,29 @@ export class TiktokTokenManualController {
         });
       }
 
-      console.log('[CHECK-USER] Consultando información del usuario...');
+      console.log('[CHECK-USER] Consultando información completa del usuario...');
 
-      // Llamar a la API de TikTok para obtener info del usuario
-      const userInfoUrl = 'https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name,username';
+      // Solicitar todos los campos disponibles del usuario
+      const fields = [
+        'open_id',           // scope: user.info.basic
+        'union_id',          // scope: user.info.basic
+        'avatar_url',        // scope: user.info.basic
+        'avatar_url_100',    // scope: user.info.basic
+        'avatar_large_url',  // scope: user.info.basic
+        'display_name',      // scope: user.info.basic
+        'username',          // scope: user.info.basic
+        'bio_description',   // scope: user.info.profile
+        'profile_deep_link', // scope: user.info.profile
+        'is_verified',       // scope: user.info.profile
+        'follower_count',    // scope: user.info.stats
+        'following_count',   // scope: user.info.stats
+        'likes_count',       // scope: user.info.stats
+        'video_count',       // scope: user.info.stats
+      ];
+
+      const userInfoUrl = `https://open.tiktokapis.com/v2/user/info/?fields=${fields.join(',')}`;
+
+      console.log('[CHECK-USER] Solicitando campos:', fields.join(', '));
 
       const response = await fetch(userInfoUrl, {
         method: 'GET',
@@ -346,6 +370,13 @@ export class TiktokTokenManualController {
                 <h2 style="color: #e74c3c;">❌ Error al obtener información del usuario</h2>
                 <p><strong>Error Code:</strong> ${data.error?.code || 'unknown'}</p>
                 <p><strong>Message:</strong> ${data.error?.message || 'Sin mensaje'}</p>
+                <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107;">
+                  <p style="margin: 0;"><strong>💡 Posible causa:</strong></p>
+                  <p style="margin: 5px 0 0 0; color: #856404;">
+                    Algunos campos requieren scopes específicos. Asegúrate de que tu app tenga aprobados los scopes: 
+                    <code>user.info.basic</code>, <code>user.info.profile</code>, <code>user.info.stats</code>
+                  </p>
+                </div>
                 <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
                   <strong>Respuesta completa:</strong>
                   <pre style="background: #fff; padding: 10px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
@@ -360,45 +391,124 @@ export class TiktokTokenManualController {
 
       return res.send(`
         <html>
-          <head><meta charset="UTF-8"><title>Usuario TikTok - Info</title></head>
-          <body style="font-family: Arial; padding: 40px; background: #f5f5f5;">
-            <div style="max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-              <h2 style="color: #27ae60;">✅ Información del Usuario con Token Actual</h2>
+          <head>
+            <meta charset="UTF-8">
+            <title>Usuario TikTok - Información Completa</title>
+            <style>
+              body { font-family: Arial; padding: 40px; background: #f5f5f5; }
+              .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .avatar-section { text-align: center; margin: 20px 0; }
+              .avatar-large { width: 150px; height: 150px; border-radius: 75px; border: 4px solid #3498db; }
+              .info-section { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+              .info-row { margin: 10px 0; }
+              .label { font-weight: bold; color: #555; }
+              .value { color: #333; }
+              .code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-family: monospace; font-size: 12px; }
+              .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+              .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center; }
+              .stat-number { font-size: 32px; font-weight: bold; margin: 10px 0; }
+              .stat-label { font-size: 14px; opacity: 0.9; }
+              .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+              .verified-badge { display: inline-block; background: #3498db; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; margin-left: 10px; }
+              .btn { display: inline-block; padding: 12px 24px; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 5px; }
+              .btn-primary { background: #3498db; }
+              .btn-success { background: #27ae60; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h2 style="color: #27ae60;">✅ Información Completa del Usuario TikTok</h2>
               
-              ${user?.avatar_url ? `
-                <div style="text-align: center; margin: 20px 0;">
-                  <img src="${user.avatar_url}" alt="Avatar" style="width: 120px; height: 120px; border-radius: 60px; border: 3px solid #3498db;">
+              ${user?.avatar_large_url || user?.avatar_url ? `
+                <div class="avatar-section">
+                  <img src="${user.avatar_large_url || user.avatar_url}" alt="Avatar" class="avatar-large">
                 </div>
               ` : ''}
 
-              <div style="background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-                <p><strong>👤 Display Name:</strong> ${user?.display_name || 'N/A'}</p>
-                <p><strong>🔑 Username:</strong> @${user?.username || 'N/A'}</p>
-                <p><strong>🆔 Open ID:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">${user?.open_id || 'N/A'}</code></p>
-                <p><strong>🔗 Union ID:</strong> <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px;">${user?.union_id || 'N/A'}</code></p>
+              <div class="info-section">
+                <h3>📋 Información Básica</h3>
+                <div class="info-row">
+                  <span class="label">👤 Display Name:</span> 
+                  <span class="value">${user?.display_name || 'N/A'}</span>
+                  ${user?.is_verified ? '<span class="verified-badge">✓ Verificado</span>' : ''}
+                </div>
+                <div class="info-row">
+                  <span class="label">🔑 Username:</span> 
+                  <span class="value">@${user?.username || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">📝 Bio:</span> 
+                  <span class="value">${user?.bio_description || 'Sin biografía'}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">🔗 Profile Link:</span> 
+                  ${user?.profile_deep_link ? `<a href="${user.profile_deep_link}" target="_blank" style="color: #3498db;">${user.profile_deep_link}</a>` : '<span class="value">N/A</span>'}
+                </div>
               </div>
 
-              <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+              <div class="info-section">
+                <h3>🔑 IDs y Avatares</h3>
+                <div class="info-row">
+                  <span class="label">🆔 Open ID:</span> 
+                  <span class="code">${user?.open_id || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">🔗 Union ID:</span> 
+                  <span class="code">${user?.union_id || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                  <span class="label">🖼️ Avatar URL:</span> 
+                  ${user?.avatar_url ? `<a href="${user.avatar_url}" target="_blank" style="color: #3498db; font-size: 12px;">Ver imagen</a>` : 'N/A'}
+                </div>
+                <div class="info-row">
+                  <span class="label">🖼️ Avatar 100px:</span> 
+                  ${user?.avatar_url_100 ? `<a href="${user.avatar_url_100}" target="_blank" style="color: #3498db; font-size: 12px;">Ver imagen</a>` : 'N/A'}
+                </div>
+                <div class="info-row">
+                  <span class="label">🖼️ Avatar Large:</span> 
+                  ${user?.avatar_large_url ? `<a href="${user.avatar_large_url}" target="_blank" style="color: #3498db; font-size: 12px;">Ver imagen</a>` : 'N/A'}
+                </div>
+              </div>
+
+              <h3 style="margin-top: 30px;">📊 Estadísticas</h3>
+              <div class="stats-grid">
+                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                  <div class="stat-label">👥 Seguidores</div>
+                  <div class="stat-number">${user?.follower_count?.toLocaleString() || '0'}</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                  <div class="stat-label">➕ Siguiendo</div>
+                  <div class="stat-number">${user?.following_count?.toLocaleString() || '0'}</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                  <div class="stat-label">❤️ Likes</div>
+                  <div class="stat-number">${user?.likes_count?.toLocaleString() || '0'}</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                  <div class="stat-label">🎬 Videos</div>
+                  <div class="stat-number">${user?.video_count?.toLocaleString() || '0'}</div>
+                </div>
+              </div>
+
+              <div class="warning">
                 <p style="margin: 0;"><strong>⚠️ Importante:</strong></p>
                 <p style="margin: 5px 0 0 0; color: #856404;">
-                  Este es el usuario asociado al token actual. Si no coincide con @6ftsjc9, necesitas generar un nuevo token con la cuenta correcta.
+                  Este es el usuario asociado al token actual. Si no es la cuenta correcta, genera un nuevo token con la cuenta deseada.
                 </p>
               </div>
 
               <div style="margin-top: 30px; text-align: center;">
-                <a href="/auth/tiktok/login" 
-                   style="display: inline-block; padding: 12px 24px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px;">
+                <a href="/auth/tiktok/login" class="btn btn-primary">
                   🔄 Generar Nuevo Token
                 </a>
-                <a href="/auth/tiktok/check-user" 
-                   style="display: inline-block; padding: 12px 24px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                <a href="/auth/tiktok/check-user" class="btn btn-success">
                   ↻ Recargar
                 </a>
               </div>
 
               <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; font-size: 12px; color: #666;">
                 <strong>Respuesta JSON completa:</strong>
-                <pre style="background: #fff; padding: 10px; border-radius: 3px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>
+                <pre style="background: #fff; padding: 10px; border-radius: 3px; overflow-x: auto; max-height: 300px;">${JSON.stringify(data, null, 2)}</pre>
               </div>
             </div>
           </body>
