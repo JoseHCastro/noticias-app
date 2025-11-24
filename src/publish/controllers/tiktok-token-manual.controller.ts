@@ -189,7 +189,8 @@ export class TiktokTokenManualController {
       }
 
       // Llamar a la API de TikTok para verificar el estado
-      const statusUrl = `https://open.tiktokapis.com/v2/post/publish/status/fetch/?publish_id=${encodeURIComponent(publishId)}`;
+      // El publish_id debe ir en el BODY, no en la URL
+      const statusUrl = 'https://open.tiktokapis.com/v2/post/publish/status/fetch/';
 
       console.log(`[CHECK-STATUS] Consultando estado de: ${publishId}`);
       console.log(`[CHECK-STATUS] URL: ${statusUrl}`);
@@ -198,8 +199,11 @@ export class TiktokTokenManualController {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=UTF-8',
         },
+        body: JSON.stringify({
+          publish_id: publishId,
+        }),
       });
 
       const data = await response.json();
