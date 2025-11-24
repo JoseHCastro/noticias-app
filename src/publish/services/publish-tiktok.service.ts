@@ -128,11 +128,12 @@ export class PublishTiktokService {
       console.log('[TIKTOK] MIME type:', mimeType);
       console.log('[TIKTOK] Buffer size:', videoBuffer.length, 'bytes');
 
+
       const step2Response = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': mimeType,
-          'Content-Length': videoBuffer.length.toString(),
+          'Content-Range': `bytes 0-${videoBuffer.length - 1}/${videoBuffer.length}`,
         },
         body: videoBuffer,
       });
