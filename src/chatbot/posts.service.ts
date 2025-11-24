@@ -57,7 +57,7 @@ Información de contexto:
   }> {
     try {
       console.log(' [LLAMADA 1/2] Validando contenido y generando textos:', message);
-      
+
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
@@ -67,14 +67,13 @@ Información de contexto:
 
 TAREA:
 1. VALIDAR si el mensaje es una noticia/evento/logro relacionado con UAGRM o FCCT (actividades académicas, eventos estudiantiles, tecnología, programación, innovación).
-2. Si es VÁLIDO, generar 5 posts profesionales para Instagram, Facebook, TikTok, LinkedIn y WhatsApp.
+2. Si es VÁLIDO, generar 4 posts profesionales para Instagram, Facebook, TikTok y LinkedIn.
 
 INSTRUCCIONES POR PLATAFORMA:
 - Instagram: 2200 caracteres máx, emojis, 5-10 hashtags (#UAGRM #Computación #Tecnología)
 - Facebook: 500 palabras, tono informativo, 3-5 hashtags
 - TikTok: Script 30-60 seg, hook fuerte, lenguaje juvenil, 3-4 hashtags
 - LinkedIn: 150-300 palabras, profesional, bullets points, 3-5 hashtags
-- WhatsApp: 100-200 palabras, conversacional, emojis, info práctica
 
 Responde ÚNICAMENTE con este JSON:
 {
@@ -84,8 +83,7 @@ Responde ÚNICAMENTE con este JSON:
     {"platform": "instagram", "content": "texto completo del post"},
     {"platform": "facebook", "content": "texto completo del post"},
     {"platform": "tiktok", "content": "script completo"},
-    {"platform": "linkedin", "content": "texto completo del post"},
-    {"platform": "whatsapp", "content": "mensaje completo"}
+    {"platform": "linkedin", "content": "texto completo del post"}
   ]
 }
 
@@ -102,11 +100,11 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
 
       const response = completion.choices[0].message.content || '{"isValid": false, "reason": "No se pudo validar"}';
       console.log(' [LLAMADA 1/2] Respuesta completa:', response.substring(0, 500) + '...');
-      
+
       const parsed = JSON.parse(response);
       console.log('Validación:', parsed.isValid, '- Reason:', parsed.reason);
       console.log(' Posts generados:', parsed.posts ? parsed.posts.length : 0);
-      
+
       return parsed;
     } catch (error) {
       console.error(' Error en validación y generación:', error);
@@ -127,14 +125,14 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
     console.log(' [LLAMADA 2/2] Generando imagen compartida...');
     const sharedImageData = await this.generateImage(message);
     console.log(' [LLAMADA 2/2] Imagen generada en OpenAI:', sharedImageData.imageUrl.substring(0, 80) + '...');
-    
+
     // Descargar y guardar imagen en nuestro servidor
     console.log(' Guardando imagen en servidor local...');
     const localImageUrl = await this.storageService.downloadAndSaveImage(sharedImageData.imageUrl);
     console.log(' Imagen disponible en:', localImageUrl);
 
     // Crear posts con textos pre-generados o generar nuevos (fallback)
-    const platforms = ['instagram', 'facebook', 'tiktok', 'linkedin', 'whatsapp'];
+    const platforms = ['instagram', 'facebook', 'tiktok', 'linkedin'];
 
     for (const platform of platforms) {
       // Buscar texto pre-generado o generar nuevo como fallback
@@ -204,7 +202,7 @@ Contexto: Universidad Autónoma Gabriel René Moreno (UAGRM) - Facultad de Cienc
 Estilo: moderno, universitario, tecnológico, inspirador. 
 Colores: azul (#0066CC), blanco, degradados modernos. 
 Elementos: tecnología, educación, universidad, estudiantes, innovación.
-Formato: Debe funcionar en Instagram, Facebook, LinkedIn y WhatsApp.
+Formato: Debe funcionar en Instagram, Facebook, TikTok y LinkedIn.
 NO incluir texto en la imagen.`;
 
       const response = await this.openai.images.generate({
@@ -267,16 +265,6 @@ Formato para LinkedIn:
 - Estructura: Problema/Situación → Solución/Oportunidad → Call-to-action
 - Usa bullets points para facilitar lectura
 - 3-5 hashtags profesionales
-- La imagen se generará automáticamente
-`,
-      whatsapp: `
-Formato para WhatsApp:
-- Mensaje conciso y directo (100-200 palabras)
-- Tono conversacional y amigable
-- Información clara: fecha, hora, lugar si aplica
-- Usa emojis para destacar puntos importantes
-- Call-to-action claro (registro, más info, contacto)
-- Sin hashtags
 - La imagen se generará automáticamente
 `,
     };

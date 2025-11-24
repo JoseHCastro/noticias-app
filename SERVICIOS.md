@@ -8,7 +8,7 @@ Gestiona la conversación con el usuario y orquesta todo el flujo de generación
 2. Crea o recupera un chat existente en la base de datos
 3. Guarda el mensaje del usuario
 4. Llama a `PostsService` para validar si es una noticia válida
-5. Si es válida, genera los 5 posts para todas las plataformas
+5. Si es válida, genera los 4 posts para todas las plataformas
 6. Llama a `SocialMediaPublisherService` para publicar automáticamente en Facebook e Instagram
 7. Guarda todo en BD: chats, mensajes y posts generados
 8. Retorna una respuesta con el resultado de las publicaciones
@@ -28,12 +28,11 @@ Valida noticias relacionadas con UAGRM/FCCT y genera contenido optimizado para r
 
 #### Llamada 1/2: Validación + Generación de textos
 - Valida si el contenido es relevante para UAGRM/FCCT
-- Si es válido, genera los 5 textos en una sola llamada:
+- Si es válido, genera los 4 textos en una sola llamada:
   - Instagram (2200 caracteres, emojis, 5-10 hashtags)
   - Facebook (500 palabras, tono informativo, 3-5 hashtags)
   - TikTok (Script 30-60 seg, lenguaje juvenil)
   - LinkedIn (150-300 palabras, profesional)
-  - WhatsApp (100-200 palabras, conversacional)
 
 #### Llamada 2/2: Generación de imagen compartida
 - Genera 1 imagen con DALL-E 3

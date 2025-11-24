@@ -24,7 +24,7 @@ export class ChatbotService {
     private chatsRepository: Repository<Chat>,
     @InjectRepository(ChatMessage)
     private chatMessagesRepository: Repository<ChatMessage>,
-  ) {}
+  ) { }
 
   // GESTIÓN DE CHATS
   async createChat(userId: string, title: string): Promise<Chat> {
@@ -126,7 +126,7 @@ export class ChatbotService {
 
     // PUBLICAR AUTOMÁTICAMENTE EN TODAS LAS PLATAFORMAS
     const publishResults: any[] = [];
-    
+
     // Obtener el post de Facebook
     const facebookPost = posts.find(p => p.platform === 'facebook');
     if (facebookPost && facebookPost.imageUrl) {
@@ -160,12 +160,11 @@ export class ChatbotService {
     const failedPublishes = publishResults.filter(r => !r.success);
 
     // Crear mensaje de respuesta del asistente con información de publicación
-    let responseContent = ` ¡Perfecto! He generado posts para las 5 plataformas:\n\n` +
+    let responseContent = ` ¡Perfecto! He generado posts para las 4 plataformas:\n\n` +
       ` Instagram - Con imagen\n` +
       ` Facebook - Con imagen\n` +
       ` TikTok - Con imagen\n` +
-      ` LinkedIn - Con imagen\n` +
-      ` WhatsApp - Con imagen\n\n` +    
+      ` LinkedIn - Con imagen\n\n` +
       ` Publicación automática:\n`;
 
     if (successfulPublishes > 0) {

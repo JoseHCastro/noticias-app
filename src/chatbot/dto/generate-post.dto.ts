@@ -5,7 +5,6 @@ export enum SocialPlatform {
   FACEBOOK = 'facebook',
   TIKTOK = 'tiktok',
   LINKEDIN = 'linkedin',
-  WHATSAPP = 'whatsapp',
 }
 
 export class GeneratePostDto {
