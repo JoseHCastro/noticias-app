@@ -5,19 +5,32 @@ import { Post } from './entities/post.entity';
 import { Chat } from './entities/chat.entity';
 import { ChatMessage, MessageRole } from './entities/chat-message.entity';
 import { PostsService } from './posts.service';
-import { PublishFacebookService } from '../publish/services/publish-facebook.service';
-import { PublishInstagramService } from '../publish/services/publish-instagram.service';
-import { PublishLinkedinService } from '../publish/services/publish-linkedin.service';
-import { PublishTiktokService } from '../publish/services/publish-tiktok.service';
+import { FacebookPublisherService } from '../social-media/services/publishers/facebook-publisher.service';
+import { InstagramPublisherService } from '../social-media/services/publishers/instagram-publisher.service';
+import { LinkedinPublisherService } from '../social-media/services/publishers/linkedin-publisher.service';
+import { TiktokPublisherService } from '../social-media/services/publishers/tiktok-publisher.service';
 
+/**
+ * ChatbotService - Servicio principal del chatbot
+ * 
+ * Responsabilidades:
+ * - Gestión de chats y mensajes
+ * - Orquestación del flujo de validación y generación de posts
+ * - Publicación automática en redes sociales
+ * 
+ * Principios SOLID aplicados:
+ * - SRP: Cada método tiene una única responsabilidad
+ * - DIP: Depende de abstracciones (ISocialMediaPublisher)
+ * - OCP: Abierto a extensión (nuevas plataformas) cerrado a modificación
+ */
 @Injectable()
 export class ChatbotService {
   constructor(
     private postsService: PostsService,
-    private publishFacebookService: PublishFacebookService,
-    private publishInstagramService: PublishInstagramService,
-    private publishLinkedinService: PublishLinkedinService,
-    private publishTiktokService: PublishTiktokService,
+    private facebookPublisher: FacebookPublisherService,
+    private instagramPublisher: InstagramPublisherService,
+    private linkedinPublisher: LinkedinPublisherService,
+    private tiktokPublisher: TiktokPublisherService,
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
     @InjectRepository(Chat)
@@ -130,21 +143,21 @@ export class ChatbotService {
     // Obtener el post de Facebook
     const facebookPost = posts.find(p => p.platform === 'facebook');
     if (facebookPost && facebookPost.imageUrl) {
-      const result = await this.publishFacebookService.publish(facebookPost.content, facebookPost.imageUrl);
+      const result = await this.facebookPublisher.publish(facebookPost.content, facebookPost.imageUrl);
       publishResults.push(result);
     }
 
     // Obtener el post de Instagram
     const instagramPost = posts.find(p => p.platform === 'instagram');
     if (instagramPost && instagramPost.imageUrl) {
-      const result = await this.publishInstagramService.publish(instagramPost.content, instagramPost.imageUrl);
+      const result = await this.instagramPublisher.publish(instagramPost.content, instagramPost.imageUrl);
       publishResults.push(result);
     }
 
     // Obtener el post de LinkedIn
     const linkedinPost = posts.find(p => p.platform === 'linkedin');
     if (linkedinPost && linkedinPost.imageUrl) {
-      const result = await this.publishLinkedinService.publish(linkedinPost.content, linkedinPost.imageUrl);
+      const result = await this.linkedinPublisher.publish(linkedinPost.content, linkedinPost.imageUrl);
       publishResults.push(result);
     }
 

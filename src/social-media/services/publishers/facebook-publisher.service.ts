@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PublishResult } from '../interfaces/publish-result.interface';
+import { PublishResult } from '../../interfaces/publish-result.interface';
+import { ISocialMediaPublisher } from '../../interfaces/publisher.interface';
 
+/**
+ * Servicio para publicar en Facebook
+ * Implementa ISocialMediaPublisher para cumplir con DIP
+ */
 @Injectable()
-export class PublishFacebookService {
+export class FacebookPublisherService implements ISocialMediaPublisher {
   private readonly facebookToken: string | undefined;
   private readonly facebookPageId: string | undefined;
 
@@ -12,16 +17,16 @@ export class PublishFacebookService {
     this.facebookPageId = this.configService.get<string>('FACEBOOK_PAGE_ID');
 
     if (!this.facebookToken) {
-      console.warn('FACEBOOK_TOKEN no configurado en .env');
+      console.warn('[Facebook] FACEBOOK_TOKEN no configurado en .env');
     }
     if (!this.facebookPageId) {
-      console.warn('FACEBOOK_PAGE_ID no configurado en .env');
+      console.warn('[Facebook] FACEBOOK_PAGE_ID no configurado en .env');
     }
   }
 
   async publish(caption: string, imageUrl: string): Promise<PublishResult> {
     try {
-      console.log('Publicando en Facebook...');
+      console.log('[Facebook] Publicando...');
 
       if (!this.facebookToken || !this.facebookPageId) {
         return {
@@ -50,7 +55,7 @@ export class PublishFacebookService {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('Error al publicar en Facebook:', data);
+        console.error('[Facebook] Error:', data);
         return {
           success: false,
           platform: 'facebook',
@@ -58,14 +63,14 @@ export class PublishFacebookService {
         };
       }
 
-      console.log('Publicado en Facebook:', data.id || data.post_id);
+      console.log('[Facebook] ✅ Publicado:', data.id || data.post_id);
       return {
         success: true,
         platform: 'facebook',
         postId: data.id || data.post_id,
       };
     } catch (error) {
-      console.error('Error al publicar en Facebook:', error.message);
+      console.error('[Facebook] Exception:', error.message);
       return {
         success: false,
         platform: 'facebook',

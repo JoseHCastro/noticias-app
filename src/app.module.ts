@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ChatbotModule } from './chatbot/chatbot.module';
 import { StorageModule } from './storage/storage.module';
+import { SharedModule } from './shared/shared.module';
+import { SocialMediaModule } from './social-media/social-media.module';
 import { User } from './users/user.entity';
 import { Post } from './chatbot/entities/post.entity';
 import { Chat } from './chatbot/entities/chat.entity';
@@ -33,12 +35,14 @@ import { ChatMessage } from './chatbot/entities/chat-message.entity';
       }),
       inject: [ConfigService],
     }),
+    SharedModule,
     AuthModule,
     UsersModule,
     ChatbotModule,
     StorageModule,
+    SocialMediaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

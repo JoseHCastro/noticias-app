@@ -1,8 +1,8 @@
 import { Body, Controller, Post, Get, Delete, Param, UseGuards, ValidationPipe, Request } from '@nestjs/common';
 import { ChatbotService } from './chatbot.service';
-import { PublishFacebookService } from '../publish/services/publish-facebook.service';
-import { PublishInstagramService } from '../publish/services/publish-instagram.service';
-import { PublishLinkedinService } from '../publish/services/publish-linkedin.service';
+import { FacebookPublisherService } from '../social-media/services/publishers/facebook-publisher.service';
+import { InstagramPublisherService } from '../social-media/services/publishers/instagram-publisher.service';
+import { LinkedinPublisherService } from '../social-media/services/publishers/linkedin-publisher.service';
 import { SendMessageDto, CreateChatDto } from './dto/chat.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -11,10 +11,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export class ChatbotController {
   constructor(
     private chatbotService: ChatbotService,
-    private publishFacebookService: PublishFacebookService,
-    private publishInstagramService: PublishInstagramService,
-    private publishLinkedinService: PublishLinkedinService,
-  ) {}
+    private facebookPublisher: FacebookPublisherService,
+    private instagramPublisher: InstagramPublisherService,
+    private linkedinPublisher: LinkedinPublisherService,
+  ) { }
 
   // ENVIAR MENSAJE AL CHAT (principal endpoint)
   @Post('send-message')
@@ -65,7 +65,7 @@ export class ChatbotController {
   @Get('chat/:id')
   async getChat(@Param('id') chatId: string, @Request() req: any) {
     const chat = await this.chatbotService.getChatById(chatId, req.user.userId);
-    
+
     if (!chat) {
       return { error: 'Chat no encontrado' };
     }
@@ -73,7 +73,7 @@ export class ChatbotController {
     // Obtener los posts de cada mensaje que los tenga
     const messagesWithPosts = await Promise.all(
       chat.messages.map(async (msg) => {
-        const posts = msg.postsGenerated 
+        const posts = msg.postsGenerated
           ? await this.chatbotService.getChatPosts(msg.id, req.user.userId)
           : [];
 
@@ -161,7 +161,7 @@ export class ChatbotController {
   @Get('post/:id')
   async getPost(@Param('id') id: string, @Request() req: any) {
     const post = await this.chatbotService.getPostById(id, req.user.userId);
-    
+
     if (!post) {
       return { error: 'Post no encontrado' };
     }
@@ -187,7 +187,7 @@ export class ChatbotController {
     @Request() req: any,
   ) {
     const post = await this.chatbotService.getPostById(id, req.user.userId);
-    
+
     if (!post) {
       return { error: 'Post no encontrado' };
     }
@@ -200,13 +200,13 @@ export class ChatbotController {
     const results: any[] = [];
     for (const platform of body.platforms) {
       if (platform === 'facebook') {
-        const result = await this.publishFacebookService.publish(post.content, post.imageUrl);
+        const result = await this.facebookPublisher.publish(post.content, post.imageUrl);
         results.push(result);
       } else if (platform === 'instagram') {
-        const result = await this.publishInstagramService.publish(post.content, post.imageUrl);
+        const result = await this.instagramPublisher.publish(post.content, post.imageUrl);
         results.push(result);
       } else if (platform === 'linkedin') {
-        const result = await this.publishLinkedinService.publish(post.content, post.imageUrl);
+        const result = await this.linkedinPublisher.publish(post.content, post.imageUrl);
         results.push(result);
       }
     }
@@ -225,7 +225,7 @@ export class ChatbotController {
     @Request() req: any,
   ) {
     const posts = await this.chatbotService.getChatPosts(messageId, req.user.userId);
-    
+
     if (!posts || posts.length === 0) {
       return { error: 'No se encontraron posts para este mensaje' };
     }
@@ -235,7 +235,7 @@ export class ChatbotController {
     // Publicar post de Facebook
     const facebookPost = posts.find(p => p.platform === 'facebook');
     if (facebookPost && facebookPost.imageUrl) {
-      const fbResult = await this.publishFacebookService.publish(
+      const fbResult = await this.facebookPublisher.publish(
         facebookPost.content,
         facebookPost.imageUrl,
       );
@@ -245,7 +245,7 @@ export class ChatbotController {
     // Publicar post de Instagram
     const instagramPost = posts.find(p => p.platform === 'instagram');
     if (instagramPost && instagramPost.imageUrl) {
-      const igResult = await this.publishInstagramService.publish(
+      const igResult = await this.instagramPublisher.publish(
         instagramPost.content,
         instagramPost.imageUrl,
       );

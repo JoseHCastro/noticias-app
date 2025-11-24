@@ -7,18 +7,18 @@ import { ChatbotController } from './chatbot.controller';
 import { Post } from './entities/post.entity';
 import { Chat } from './entities/chat.entity';
 import { ChatMessage } from './entities/chat-message.entity';
-import { PublishModule } from '../publish/publish.module';
+import { SocialMediaModule } from '../social-media/social-media.module';
 import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([Post, Chat, ChatMessage]),
-    PublishModule,
+    SocialMediaModule,
     StorageModule,
   ],
   controllers: [ChatbotController],
   providers: [ChatbotService, PostsService],
   exports: [ChatbotService, PostsService],
 })
-export class ChatbotModule {}
+export class ChatbotModule { }
