@@ -40,17 +40,20 @@ export class SocialMediaController {
                 },
             }),
             fileFilter: (req, file, callback) => {
-                const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+                const allowedMimes = [
+                    'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif',
+                    'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'
+                ];
                 if (allowedMimes.includes(file.mimetype)) {
                     callback(null, true);
                 } else {
                     callback(
-                        new HttpException('Solo se aceptan imágenes', HttpStatus.BAD_REQUEST),
+                        new HttpException('Solo se aceptan imágenes y videos (mp4, mov, avi, webm)', HttpStatus.BAD_REQUEST),
                         false,
                     );
                 }
             },
-            limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+            limits: { fileSize: 100 * 1024 * 1024 }, // 10MB
         }),
     )
     async uploadPost(

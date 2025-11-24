@@ -33,24 +33,33 @@ export class SocialMediaFacadeService {
     async publishPost(
         file: Express.Multer.File,
         dto: UploadPostDto,
-    ): Promise<PublishResult & { imageUrl?: string; filename?: string }> {
+    ): Promise<PublishResult & { imageUrl?: string; videoUrl?: string; filename?: string }> {
         this.logger.log(`Publishing to ${dto.platform}`);
 
         try {
+            const isVideo = file.mimetype.startsWith('video/');
+
+            // Si es video y es para TikTok, usar flujo de video
+            if (isVideo && dto.platform === 'tiktok') {
+                return this.publishVideo(file, dto.caption);
+            }
+
             // 1. Validar y guardar archivo
-            const imageUrl = await this.fileUploadService.saveImage(file, dto.platform);
-            this.logger.log(`Image saved: ${imageUrl}`);
+            // Nota: saveImage ahora debería ser capaz de manejar videos también o tener un método genérico saveFile
+            // Por simplicidad, usaremos saveImage que retorna la URL pública
+            const mediaUrl = await this.fileUploadService.saveImage(file, dto.platform);
+            this.logger.log(`Media saved: ${mediaUrl}`);
 
             // 2. Obtener publisher correspondiente (Factory Pattern)
             const publisher = this.publisherFactory.getPublisher(dto.platform);
 
             // 3. Publicar en la plataforma
-            const result = await publisher.publish(dto.caption, imageUrl);
+            const result = await publisher.publish(dto.caption, mediaUrl);
 
             // 4. Si falló, limpiar archivo
             if (!result.success) {
                 this.logger.error(`Publication failed for ${dto.platform}: ${result.error}`);
-                await this.fileUploadService.deleteFile(imageUrl);
+                await this.fileUploadService.deleteFile(mediaUrl);
                 return result;
             }
 
@@ -58,7 +67,7 @@ export class SocialMediaFacadeService {
             this.logger.log(`Successfully published to ${dto.platform}: ${result.postId}`);
             return {
                 ...result,
-                imageUrl,
+                [isVideo ? 'videoUrl' : 'imageUrl']: mediaUrl,
                 filename: file.filename,
             };
         } catch (error) {
@@ -91,9 +100,28 @@ export class SocialMediaFacadeService {
         this.logger.log('Publishing video to TikTok');
 
         try {
-            // TODO: Implementar lógica de video upload
-            // Por ahora retornamos error
-            throw new Error('Video upload not implemented yet');
+            // 1. Guardar video
+            const videoUrl = await this.fileUploadService.saveImage(file, 'tiktok'); // Reutilizamos saveImage por ahora
+            this.logger.log(`Video saved: ${videoUrl}`);
+
+            // 2. Obtener publisher de TikTok
+            const publisher = this.publisherFactory.getTiktokPublisher();
+
+            // 3. Publicar
+            const result = await publisher.publish(caption, videoUrl);
+
+            // 4. Si falló, limpiar
+            if (!result.success) {
+                this.logger.error(`Publication failed for tiktok: ${result.error}`);
+                await this.fileUploadService.deleteFile(videoUrl);
+                return result;
+            }
+
+            return {
+                ...result,
+                videoUrl,
+                filename: file.filename,
+            };
         } catch (error) {
             this.logger.error('Error publishing video to TikTok:', error);
 

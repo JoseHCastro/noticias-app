@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getMimeType, isImage } from '../../../shared/utils/file.utils';
+import { getMimeType, isImage, isVideo } from '../../../shared/utils/file.utils';
 
 /**
  * Servicio para manejo de archivos de upload
@@ -40,9 +40,9 @@ export class FileUploadService {
             throw new BadRequestException('No se recibió ningún archivo');
         }
 
-        // Validar que sea una imagen
-        if (!isImage(file.mimetype)) {
-            throw new BadRequestException('El archivo debe ser una imagen (jpg, png, webp, gif)');
+        // Validar que sea una imagen o video
+        if (!isImage(file.mimetype) && !isVideo(file.mimetype)) {
+            throw new BadRequestException('El archivo debe ser una imagen o video válido');
         }
 
         this.logger.log(`Saving image for ${platform}: ${file.originalname}`);
