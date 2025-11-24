@@ -15,7 +15,7 @@ export class FileUploadService {
     private readonly baseUrl: string;
 
     constructor(private configService: ConfigService) {
-        this.baseUrl = this.configService.get<string>('BASE_URL') || 'http://localhost:3000';
+        this.baseUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3000';
         this.ensureUploadDirExists();
     }
 
