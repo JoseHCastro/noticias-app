@@ -6,12 +6,13 @@ import { PublishLinkedinService } from './services/publish-linkedin.service';
 import { PublishTiktokService } from './services/publish-tiktok.service';
 import { PublishTiktokAuthController } from './controllers/publish-tiktok-auth.controller';
 import { TiktokTokenManualController } from './controllers/tiktok-token-manual.controller';
+import { TiktokUploadController } from './controllers/tiktok-upload.controller';
 
 @Module({
   imports: [
     ConfigModule,
   ],
-  controllers: [PublishTiktokAuthController, TiktokTokenManualController],
+  controllers: [PublishTiktokAuthController, TiktokTokenManualController, TiktokUploadController],
   providers: [
     PublishFacebookService,
     PublishInstagramService,
