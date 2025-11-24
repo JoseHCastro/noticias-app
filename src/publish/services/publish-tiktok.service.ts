@@ -70,7 +70,6 @@ export class PublishTiktokService {
           disable_comment: false,
           disable_duet: false,
           disable_stitch: false,
-          video_cover_timestamp_ms: 1000,
         },
         source_info: {
           source: 'FILE_UPLOAD',
