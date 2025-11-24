@@ -41,6 +41,7 @@ export class SocialMediaFacadeService {
 
             // Si es video y es para TikTok, usar flujo de video
             if (isVideo && dto.platform === 'tiktok') {
+                // Pasamos file.path para que TikTok pueda leer el archivo físico
                 return this.publishVideo(file, dto.caption);
             }
 
@@ -100,15 +101,16 @@ export class SocialMediaFacadeService {
         this.logger.log('Publishing video to TikTok');
 
         try {
-            // 1. Guardar video
-            const videoUrl = await this.fileUploadService.saveImage(file, 'tiktok'); // Reutilizamos saveImage por ahora
+            // 1. Guardar video (solo para tener referencia y URL pública si se necesita)
+            const videoUrl = await this.fileUploadService.saveImage(file, 'tiktok');
             this.logger.log(`Video saved: ${videoUrl}`);
 
             // 2. Obtener publisher de TikTok
             const publisher = this.publisherFactory.getTiktokPublisher();
 
-            // 3. Publicar
-            const result = await publisher.publish(caption, videoUrl);
+            // 3. Publicar usando la RUTA FÍSICA (file.path)
+            // TikTok necesita leer el archivo del disco para subirlo
+            const result = await publisher.publish(caption, file.path);
 
             // 4. Si falló, limpiar
             if (!result.success) {
