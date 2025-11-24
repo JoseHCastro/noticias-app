@@ -28,16 +28,19 @@ export class StorageController {
     const ext = filename.split('.').pop()?.toLowerCase();
     const contentType = this.getContentType(ext);
 
-    // Usar res.type() es más seguro en Express
-    res.type(contentType);
-    res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache 1 año
-
     // Log para depuración en Render
     console.log(`Serving file: ${filename} with Content-Type: ${contentType}`);
 
-    // Enviar archivo
-    const fileStream = fs.createReadStream(filepath);
-    fileStream.pipe(res);
+    // Usar res.sendFile es mucho más robusto para clientes estrictos como Instagram
+    // Calcula automáticamente Content-Length, ETags, y maneja rangos
+    res.sendFile(filepath, { root: '.' }, (err) => {
+      if (err) {
+        console.error(`Error serving file ${filename}:`, err);
+        if (!res.headersSent) {
+          res.status(404).send('Not Found');
+        }
+      }
+    });
   }
 
   /**
