@@ -32,8 +32,8 @@ export class StorageController {
     console.log(`Serving file: ${filename} with Content-Type: ${contentType}`);
 
     // Usar res.sendFile es mucho más robusto para clientes estrictos como Instagram
-    // Calcula automáticamente Content-Length, ETags, y maneja rangos
-    res.sendFile(filepath, { root: '.' }, (err) => {
+    // Al ser ruta absoluta (process.cwd), no necesitamos 'root' o debemos tener cuidado
+    res.sendFile(filepath, (err) => {
       if (err) {
         console.error(`Error serving file ${filename}:`, err);
         if (!res.headersSent) {

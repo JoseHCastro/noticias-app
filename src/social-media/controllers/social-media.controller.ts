@@ -60,6 +60,10 @@ export class SocialMediaController {
         @UploadedFile() file: Express.Multer.File,
         @Body() dto: UploadPostDto,
     ) {
+        if (!file) {
+            throw new HttpException('No se recibió el archivo. Asegúrate de usar la key "image" en form-data', HttpStatus.BAD_REQUEST);
+        }
+
         // Delegar toda la lógica al facade
         const result = await this.socialMediaFacade.publishPost(file, dto);
 

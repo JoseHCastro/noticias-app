@@ -32,6 +32,9 @@ import { ChatMessage } from './chatbot/entities/chat-message.entity';
         entities: [User, Post, Chat, ChatMessage],
         synchronize: true, // Solo para desarrollo, cambiar a false en producción
         logging: false,
+        ssl: {
+          rejectUnauthorized: false,
+        },
       }),
       inject: [ConfigService],
     }),
