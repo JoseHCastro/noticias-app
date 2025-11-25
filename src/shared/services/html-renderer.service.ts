@@ -5,6 +5,8 @@ interface TokenData {
     refreshToken?: string;
     expiresIn?: number;
     scope?: string;
+    scopes?: string;
+    openId?: string;
 }
 
 /**
@@ -50,9 +52,14 @@ export class HtmlRendererService {
                 <code>${tokens.expiresIn} segundos (${Math.floor(tokens.expiresIn / 3600)} horas)</code>
               ` : ''}
               
-              ${tokens.scope ? `
+              ${tokens.scope || tokens.scopes ? `
                 <div class="label">📋 Scopes:</div>
-                <code>${tokens.scope}</code>
+                <code>${tokens.scope || tokens.scopes}</code>
+              ` : ''}
+              
+              ${tokens.openId ? `
+                <div class="label">🆔 Open ID:</div>
+                <code>${tokens.openId}</code>
               ` : ''}
             </div>
 

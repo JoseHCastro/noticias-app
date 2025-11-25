@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 // Controllers
 import { SocialMediaController } from './controllers/social-media.controller';
+import { TiktokAuthController } from './controllers/tiktok-auth.controller';
 
 // Services - Facade
 import { SocialMediaFacadeService } from './services/social-media-facade.service';
@@ -17,13 +18,16 @@ import { PublisherFactoryService } from './services/publishers/publisher-factory
 // Services - Upload
 import { FileUploadService } from './services/upload/file-upload.service';
 
+// Shared
+import { SharedModule } from '../shared/shared.module';
+
 /**
  * Módulo unificado de redes sociales
  * Soporta Facebook, Instagram, LinkedIn y TikTok
  */
 @Module({
-    imports: [ConfigModule],
-    controllers: [SocialMediaController],
+    imports: [ConfigModule, SharedModule],
+    controllers: [SocialMediaController, TiktokAuthController],
     providers: [
         // Facade
         SocialMediaFacadeService,
