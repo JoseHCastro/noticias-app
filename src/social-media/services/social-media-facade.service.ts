@@ -138,4 +138,26 @@ export class SocialMediaFacadeService {
             };
         }
     }
+    /**
+     * Publica contenido directamente usando una URL de imagen existente
+     * Útil para el Chatbot que genera imágenes con DALL-E y las sube a Cloudinary
+     */
+    async publishContent(
+        platform: string,
+        caption: string,
+        mediaUrl: string,
+    ): Promise<PublishResult> {
+        this.logger.log(`Publishing content to ${platform} with media: ${mediaUrl}`);
+        try {
+            const publisher = this.publisherFactory.getPublisher(platform as any);
+            return await publisher.publish(caption, mediaUrl);
+        } catch (error) {
+            this.logger.error(`Error publishing content to ${platform}:`, error);
+            return {
+                success: false,
+                platform,
+                error: error.message,
+            };
+        }
+    }
 }

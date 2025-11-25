@@ -5,6 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { Post } from './entities/post.entity';
 import { StorageService } from '../storage/storage.service';
+import { CloudinaryService } from '../shared/services/cloudinary.service';
+import { HeyGenService } from '../shared/services/heygen.service';
 
 interface GeneratedPost {
   platform: string;
@@ -31,6 +33,8 @@ Información de contexto:
   constructor(
     private configService: ConfigService,
     private storageService: StorageService,
+    private cloudinaryService: CloudinaryService,
+    private heyGenService: HeyGenService,
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
   ) {
@@ -38,10 +42,6 @@ Información de contexto:
 
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY no está configurada en las variables de entorno');
-    }
-
-    if (apiKey.includes('_openai_api_key_here') || !apiKey.startsWith('sk-')) {
-      console.warn(' ADVERTENCIA: La OPENAI_API_KEY parece ser inválida o un placeholder');
     }
 
     this.openai = new OpenAI({
@@ -66,14 +66,15 @@ Información de contexto:
             content: `Eres un asistente especializado de la Universidad Autónoma Gabriel René Moreno (UAGRM) y la Facultad de Ciencias de la Computación y Telecomunicaciones.
 
 TAREA:
-1. VALIDAR si el mensaje es una noticia/evento/logro relacionado con UAGRM o FCCT (actividades académicas, eventos estudiantiles, tecnología, programación, innovación).
-2. Si es VÁLIDO, generar 4 posts profesionales para Instagram, Facebook, TikTok y LinkedIn.
+1. VALIDAR si el mensaje es una noticia/evento/logro relacionado con UAGRM o FICCT (actividades académicas, eventos estudiantiles, tecnología, programación, innovación).
+2. Si es VÁLIDO, generar 5 posts profesionales para Instagram, Facebook, TikTok, LinkedIn y WhatsApp.
 
 INSTRUCCIONES POR PLATAFORMA:
 - Instagram: 2200 caracteres máx, emojis, 5-10 hashtags (#UAGRM #Computación #Tecnología)
 - Facebook: 500 palabras, tono informativo, 3-5 hashtags
 - TikTok: Script 30-60 seg, hook fuerte, lenguaje juvenil, 3-4 hashtags
 - LinkedIn: 150-300 palabras, profesional, bullets points, 3-5 hashtags
+- WhatsApp: Breve, directo, tono cercano, emojis, ideal para difusión en grupos, sin hashtags excesivos.
 
 Responde ÚNICAMENTE con este JSON:
 {
@@ -83,7 +84,8 @@ Responde ÚNICAMENTE con este JSON:
     {"platform": "instagram", "content": "texto completo del post"},
     {"platform": "facebook", "content": "texto completo del post"},
     {"platform": "tiktok", "content": "script completo"},
-    {"platform": "linkedin", "content": "texto completo del post"}
+    {"platform": "linkedin", "content": "texto completo del post"},
+    {"platform": "whatsapp", "content": "texto completo del post"}
   ]
 }
 
@@ -95,7 +97,7 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
           },
         ],
         temperature: 0.8,
-        max_tokens: 3000,
+        max_tokens: 3500,
       });
 
       const response = completion.choices[0].message.content || '{"isValid": false, "reason": "No se pudo validar"}';
@@ -126,27 +128,41 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
     const sharedImageData = await this.generateImage(message);
     console.log(' [LLAMADA 2/2] Imagen generada en OpenAI:', sharedImageData.imageUrl.substring(0, 80) + '...');
 
-    // Descargar y guardar imagen en nuestro servidor
-    console.log(' Guardando imagen en servidor local...');
-    const localImageUrl = await this.storageService.downloadAndSaveImage(sharedImageData.imageUrl);
-    console.log(' Imagen disponible en:', localImageUrl);
+    // Subir imagen a Cloudinary (URL persistente)
+    console.log(' Subiendo imagen a Cloudinary...');
+    let cloudinaryUrl = 'https://via.placeholder.com/1024x1024?text=Error+Cloudinary';
+    try {
+      cloudinaryUrl = await this.cloudinaryService.uploadImageFromUrl(sharedImageData.imageUrl);
+      console.log(' Imagen disponible en Cloudinary:', cloudinaryUrl);
+    } catch (error) {
+      console.error('Error subiendo a Cloudinary, usando placeholder:', error);
+    }
 
     // Crear posts con textos pre-generados o generar nuevos (fallback)
-    const platforms = ['instagram', 'facebook', 'tiktok', 'linkedin'];
+    const platforms = ['instagram', 'facebook', 'tiktok', 'linkedin', 'whatsapp'];
 
     for (const platform of platforms) {
       // Buscar texto pre-generado o generar nuevo como fallback
       const preGenerated = preGeneratedTexts?.find((p) => p.platform === platform);
       const content = preGenerated?.content || (await this.generatePostContent(message, this.getPlatformInstructions(platform)));
 
+      let videoUrl: string | undefined = undefined;
+      // Si es TikTok, generar video con HeyGen
+      if (platform === 'tiktok') {
+        try {
+          videoUrl = await this.generateVideo(content);
+        } catch (error) {
+          console.error('Error generando video para TikTok:', error);
+        }
+      }
+
       const post: GeneratedPost = {
         platform,
         content,
-        imageUrl: localImageUrl, // URL de nuestro servidor
+        imageUrl: cloudinaryUrl, // URL de Cloudinary
+        videoUrl: videoUrl,
         imagePrompt: sharedImageData.prompt,
       };
-
-      // TikTok también usa la imagen compartida (no video por ahora)
 
       // Guardar en base de datos
       const savedPost = await this.postsRepository.save({
@@ -155,7 +171,7 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
         content,
         userId,
         chatMessageId,
-        imageUrl: post.imageUrl,
+        imageUrl: platform === 'tiktok' ? undefined : post.imageUrl, // TikTok no lleva imagen estática
         videoUrl: post.videoUrl,
         imagePrompt: post.imagePrompt,
       });
@@ -197,13 +213,12 @@ Si NO es válido, devuelve solo isValid:false y reason, sin posts.`,
   // Generar 1 imagen compartida con DALL-E 3
   private async generateImage(message: string): Promise<{ imageUrl: string; prompt: string }> {
     try {
-      const imagePrompt = `Crea una imagen profesional y atractiva para redes sociales sobre: "${message}". 
-Contexto: Universidad Autónoma Gabriel René Moreno (UAGRM) - Facultad de Ciencias de la Computación y Telecomunicaciones.
-Estilo: moderno, universitario, tecnológico, inspirador. 
-Colores: azul (#0066CC), blanco, degradados modernos. 
-Elementos: tecnología, educación, universidad, estudiantes, innovación.
-Formato: Debe funcionar en Instagram, Facebook, TikTok y LinkedIn.
-NO incluir texto en la imagen.`;
+      const imagePrompt = `Genera una fotografía realista y profesional para redes sociales sobre: "${message}".
+Contexto: Facultad de Ciencias de la Computación y Telecomunicaciones (FICCT) de la UAGRM.
+Estilo Visual: Fotografía de alta calidad, iluminación natural, estilo cinematográfico moderno.
+Elementos Clave: Estudiantes universitarios diversos interactuando con tecnología real (laptops, laboratorios, robots), ambiente de campus universitario moderno y vibrante.
+Evitar: Arte abstracto, formas geométricas sin sentido, ilustraciones 3D genéricas, texto en la imagen.
+Atmósfera: Innovación, colaboración académica, futuro digital.`;
 
       const response = await this.openai.images.generate({
         model: 'dall-e-3',
@@ -226,6 +241,40 @@ NO incluir texto en la imagen.`;
     }
   }
 
+  // Generación de video con HeyGen (TikTok)
+  private async generateVideo(script: string): Promise<string | undefined> {
+    console.log(' [HeyGen] Iniciando generación de video para TikTok...');
+
+    if (!script || typeof script !== 'string') {
+      console.warn(' [HeyGen] Script inválido o vacío, omitiendo generación de video.');
+      return undefined;
+    }
+
+    // Limitar script para no exceder duración/créditos (aprox 130 caracteres ~ 8-10 seg)
+    // HeyGen cobra por duración, así que mantenemos el script muy conciso.
+    const shortScript = script.length > 130 ? script.substring(0, 127) + '...' : script;
+
+    const heyGenUrl = await this.heyGenService.generateVideo(shortScript);
+
+    if (!heyGenUrl) {
+      console.warn(' [HeyGen] No se pudo generar el video.');
+      return undefined;
+    }
+
+    console.log(' [HeyGen] Video generado:', heyGenUrl);
+    console.log(' [Cloudinary] Subiendo video para persistencia...');
+
+    try {
+      const cloudinaryUrl = await this.cloudinaryService.uploadVideoFromUrl(heyGenUrl);
+      console.log(' [Cloudinary] Video subido exitosamente:', cloudinaryUrl);
+      return cloudinaryUrl;
+    } catch (error) {
+      console.error(' [Cloudinary] Error subiendo video:', error);
+      // Si falla Cloudinary, retornamos la URL de HeyGen (aunque expira) como fallback
+      return heyGenUrl;
+    }
+  }
+
   // Instrucciones por plataforma
   private getPlatformInstructions(platform: string): string {
     const instructions = {
@@ -236,7 +285,6 @@ Formato para Instagram:
 - Incluye 5-10 hashtags relevantes al final (#UAGRM #Computación #Tecnología #Bolivia #SantaCruz)
 - Tono: Inspirador y visual
 - Estructura: Hook inicial, contenido breve, call-to-action, hashtags
-- La imagen se generará automáticamente
 `,
       facebook: `
 Formato para Facebook:
@@ -245,17 +293,19 @@ Formato para Facebook:
 - Incluye emojis con moderación
 - Estructura: Título atractivo, desarrollo completo, call-to-action
 - 3-5 hashtags al final
-- La imagen se generará automáticamente
 `,
       tiktok: `
 Formato para TikTok:
-- Script breve y dinámico (30-60 segundos de lectura)
+- Script EXTREMADAMENTE BREVE (máximo 8-10 segundos de lectura)
+- Máximo 20-25 palabras.
+- Directo para estudiantes de la UAGRM.
+- Lenguaje juvenil y urgente.
+- Sin introducciones largas, ve al grano.
 - Lenguaje juvenil y cercano
 - Hook inicial MUY fuerte (primeros 3 segundos)
 - Call-to-action claro
 - 3-4 hashtags trending + específicos
 - Incluye ideas para efectos y transiciones
-- Nota: Se generará una imagen estática (video no disponible aún)
 `,
       linkedin: `
 Formato para LinkedIn:
@@ -265,8 +315,16 @@ Formato para LinkedIn:
 - Estructura: Problema/Situación → Solución/Oportunidad → Call-to-action
 - Usa bullets points para facilitar lectura
 - 3-5 hashtags profesionales
-- La imagen se generará automáticamente
 `,
+      whatsapp: `
+Formato para WhatsApp:
+- Breve y directo (máximo 2-3 párrafos cortos)
+- Tono cercano y útil
+- Emojis para resaltar puntos clave
+- Ideal para difusión en grupos de estudiantes/docentes
+- Sin hashtags excesivos (máximo 1 o 2 si es muy necesario)
+- Call-to-action claro (ej: "Más info en el link", "Inscríbete aquí")
+`
     };
 
     return instructions[platform] || instructions.instagram;

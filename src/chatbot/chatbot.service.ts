@@ -1,14 +1,13 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { Chat } from './entities/chat.entity';
 import { ChatMessage, MessageRole } from './entities/chat-message.entity';
 import { PostsService } from './posts.service';
-import { FacebookPublisherService } from '../social-media/services/publishers/facebook-publisher.service';
-import { InstagramPublisherService } from '../social-media/services/publishers/instagram-publisher.service';
-import { LinkedinPublisherService } from '../social-media/services/publishers/linkedin-publisher.service';
-import { TiktokPublisherService } from '../social-media/services/publishers/tiktok-publisher.service';
+import { SocialMediaFacadeService } from '../social-media/services/social-media-facade.service';
+import { UploadPostDto } from '../social-media/dto/upload-post.dto';
+import { SocialMediaPlatform } from '../social-media/enums/social-media-platform.enum';
 
 /**
  * ChatbotService - Servicio principal del chatbot
@@ -17,20 +16,14 @@ import { TiktokPublisherService } from '../social-media/services/publishers/tikt
  * - Gestión de chats y mensajes
  * - Orquestación del flujo de validación y generación de posts
  * - Publicación automática en redes sociales
- * 
- * Principios SOLID aplicados:
- * - SRP: Cada método tiene una única responsabilidad
- * - DIP: Depende de abstracciones (ISocialMediaPublisher)
- * - OCP: Abierto a extensión (nuevas plataformas) cerrado a modificación
  */
 @Injectable()
 export class ChatbotService {
+  private readonly logger = new Logger(ChatbotService.name);
+
   constructor(
     private postsService: PostsService,
-    private facebookPublisher: FacebookPublisherService,
-    private instagramPublisher: InstagramPublisherService,
-    private linkedinPublisher: LinkedinPublisherService,
-    private tiktokPublisher: TiktokPublisherService,
+    private socialMediaFacade: SocialMediaFacadeService,
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
     @InjectRepository(Chat)
@@ -75,7 +68,7 @@ export class ChatbotService {
     return (result.affected ?? 0) > 0;
   }
 
-  // ENVIAR MENSAJE Y PROCESAR
+  // ENVIAR MENSAJE Y PROCESAR (ASÍNCRONO PARA EVITAR TIMEOUT)
   async sendMessage(userId: string, message: string, chatId?: string): Promise<any> {
     let chat: Chat;
 
@@ -103,11 +96,11 @@ export class ChatbotService {
       isNewsValidated: true,
     });
 
-    // OPTIMIZACIÓN: Validar Y generar textos en 1 sola llamada
+    // 1. VALIDACIÓN Y GENERACIÓN DE TEXTOS (Rápido: ~5-10s)
     const validation = await this.postsService.validateAndGenerateTexts(message);
 
     if (!validation.isValid) {
-      // Respuesta negativa
+      // Respuesta negativa inmediata
       const assistantMessage = await this.chatMessagesRepository.save({
         chatId: chat.id,
         role: MessageRole.ASSISTANT,
@@ -128,103 +121,135 @@ export class ChatbotService {
       };
     }
 
-    // Generar los 5 posts automáticamente (usando textos pre-generados)
-    const posts = await this.postsService.generateAllPosts(message, userId, userMessage.id, validation.posts);
-
-    // Marcar el mensaje del usuario como validado y con posts generados
-    await this.chatMessagesRepository.update(userMessage.id, {
-      isNewsValidated: true,
-      postsGenerated: true,
-    });
-
-    // PUBLICAR AUTOMÁTICAMENTE EN TODAS LAS PLATAFORMAS
-    const publishResults: any[] = [];
-
-    // Obtener el post de Facebook
-    const facebookPost = posts.find(p => p.platform === 'facebook');
-    if (facebookPost && facebookPost.imageUrl) {
-      const result = await this.facebookPublisher.publish(facebookPost.content, facebookPost.imageUrl);
-      publishResults.push(result);
-    }
-
-    // Obtener el post de Instagram
-    const instagramPost = posts.find(p => p.platform === 'instagram');
-    if (instagramPost && instagramPost.imageUrl) {
-      const result = await this.instagramPublisher.publish(instagramPost.content, instagramPost.imageUrl);
-      publishResults.push(result);
-    }
-
-    // Obtener el post de LinkedIn
-    const linkedinPost = posts.find(p => p.platform === 'linkedin');
-    if (linkedinPost && linkedinPost.imageUrl) {
-      const result = await this.linkedinPublisher.publish(linkedinPost.content, linkedinPost.imageUrl);
-      publishResults.push(result);
-    }
-
-    // TikTok - DESACTIVADO (apps Sandbox no pueden publicar hasta estar aprobadas)
-    // const tiktokPost = posts.find(p => p.platform === 'tiktok');
-    // if (tiktokPost && tiktokPost.imageUrl) {
-    //   const result = await this.publishTiktokService.publish(tiktokPost.content, tiktokPost.imageUrl);
-    //   publishResults.push(result);
-    // }
-
-    // Contar publicaciones exitosas
-    const successfulPublishes = publishResults.filter(r => r.success).length;
-    const failedPublishes = publishResults.filter(r => !r.success);
-
-    // Crear mensaje de respuesta del asistente con información de publicación
-    let responseContent = ` ¡Perfecto! He generado posts para las 4 plataformas:\n\n` +
-      ` Instagram - Con imagen\n` +
-      ` Facebook - Con imagen\n` +
-      ` TikTok - Con imagen\n` +
-      ` LinkedIn - Con imagen\n\n` +
-      ` Publicación automática:\n`;
-
-    if (successfulPublishes > 0) {
-      responseContent += ` ${successfulPublishes} post(s) publicado(s) exitosamente\n`;
-      publishResults.forEach(result => {
-        if (result.success) {
-          responseContent += `   • ${result.platform}: ID ${result.postId}\n`;
-        }
-      });
-    }
-
-    if (failedPublishes.length > 0) {
-      responseContent += ` ${failedPublishes.length} post(s) fallaron:\n`;
-      failedPublishes.forEach(result => {
-        responseContent += `   • ${result.platform}: ${result.error}\n`;
-      });
-    }
-
-    const assistantMessage = await this.chatMessagesRepository.save({
+    // 2. RESPUESTA INMEDIATA AL USUARIO (Para evitar Timeout)
+    const processingMessage = await this.chatMessagesRepository.save({
       chatId: chat.id,
       role: MessageRole.ASSISTANT,
-      content: responseContent,
+      content: `✅ Noticia validada. He generado los borradores de texto.\n\n⏳ **Iniciando generación de multimedia (Imagen + Video IA)...**\n\nEsto puede tomar unos minutos (especialmente el video). Te notificaré aquí cuando termine y publicaré automáticamente.`,
       isNewsValidated: true,
-      postsGenerated: true,
+      postsGenerated: false, // Aún no están listos los posts finales con media
     });
 
-    await this.chatsRepository.update(chat.id, { lastMessageAt: new Date() });
+    // 3. LANZAR PROCESO PESADO EN BACKGROUND (Fire and Forget)
+    // No usamos 'await' aquí para liberar la respuesta HTTP
+    this.processAsyncContent(
+      message,
+      userId,
+      userMessage.id,
+      validation.posts || [],
+      chat.id
+    ).catch(err => this.logger.error('Error en proceso asíncrono:', err));
 
     return {
       chatId: chat.id,
       messageId: userMessage.id,
-      assistantMessageId: assistantMessage.id,
+      assistantMessageId: processingMessage.id,
       validationResult: {
         isValid: true,
         reason: validation.reason,
       },
-      posts: posts.map(p => ({
-        id: p['id'],
-        platform: p.platform,
-        content: p.content,
-        imageUrl: p.imageUrl,
-        videoUrl: p.videoUrl,
-        createdAt: p['createdAt'],
-      })),
-      publishResults: publishResults,
-      message: 'Posts generados y publicados exitosamente',
+      message: 'Procesamiento iniciado. Recibirás una notificación cuando termine.',
+      status: 'processing_background'
     };
+  }
+
+  /**
+   * Procesa la generación de multimedia y publicación en segundo plano
+   */
+  private async processAsyncContent(
+    message: string,
+    userId: string,
+    userMessageId: string,
+    preGeneratedTexts: any[],
+    chatId: string
+  ) {
+    this.logger.log(`[Background] Iniciando generación de contenido para chat ${chatId}...`);
+
+    try {
+      // Generar los 5 posts con multimedia (Lento: Imagen + Video HeyGen)
+      const posts = await this.postsService.generateAllPosts(message, userId, userMessageId, preGeneratedTexts);
+
+      // Marcar el mensaje del usuario como completado
+      await this.chatMessagesRepository.update(userMessageId, {
+        postsGenerated: true,
+      });
+
+      // PUBLICAR AUTOMÁTICAMENTE
+      const publishResults: any[] = [];
+      const platformsToPublish = [
+        { name: 'facebook', enum: SocialMediaPlatform.FACEBOOK },
+        { name: 'instagram', enum: SocialMediaPlatform.INSTAGRAM },
+        { name: 'linkedin', enum: SocialMediaPlatform.LINKEDIN },
+        { name: 'tiktok', enum: SocialMediaPlatform.TIKTOK }
+      ];
+
+      for (const platform of platformsToPublish) {
+        const post = posts.find(p => p.platform === platform.name);
+        // Para TikTok usamos videoUrl, para los demás imageUrl
+        const mediaUrl = platform.name === 'tiktok' ? post?.videoUrl : post?.imageUrl;
+
+        if (post && mediaUrl) {
+          const result = await this.socialMediaFacade.publishContent(
+            platform.enum,
+            post.content,
+            mediaUrl
+          );
+          publishResults.push(result);
+        }
+      }
+
+      // Contar resultados
+      const successfulPublishes = publishResults.filter(r => r.success).length;
+      const failedPublishes = publishResults.filter(r => !r.success);
+
+      // Crear mensaje final de éxito
+      let responseContent = `🎉 **¡Proceso completado!**\n\n` +
+        `✅ Imagen generada\n` +
+        `✅ Video generado (TikTok)\n` +
+        `✅ Publicación automática:\n`;
+
+      if (successfulPublishes > 0) {
+        responseContent += `   • ${successfulPublishes} posts publicados (FB, IG, LI)\n`;
+      }
+      if (failedPublishes.length > 0) {
+        responseContent += `   • ${failedPublishes.length} fallaron\n`;
+      }
+
+      // Agregar links o info de TikTok/WhatsApp
+      const tiktokPost = posts.find(p => p.platform === 'tiktok');
+      if (tiktokPost && tiktokPost.videoUrl) {
+        responseContent += `\n📱 **TikTok**: Video generado exitosamente.\n🔗 [Ver Video](${tiktokPost.videoUrl})\n`;
+      }
+
+      const whatsappPost = posts.find(p => p.platform === 'whatsapp');
+      if (whatsappPost) {
+        responseContent += `💬 **WhatsApp**: Contenido listo para enviar.\n`;
+      }
+
+      // Guardar mensaje de notificación final
+      await this.chatMessagesRepository.save({
+        chatId: chatId,
+        role: MessageRole.ASSISTANT,
+        content: responseContent,
+        isNewsValidated: true,
+        postsGenerated: true,
+      });
+
+      await this.chatsRepository.update(chatId, { lastMessageAt: new Date() });
+      this.logger.log(`[Background] Proceso finalizado para chat ${chatId}`);
+
+    } catch (error) {
+      this.logger.error(`[Background] Error procesando contenido: ${error.message}`, error.stack);
+
+      // Notificar error al usuario
+      await this.chatMessagesRepository.save({
+        chatId: chatId,
+        role: MessageRole.ASSISTANT,
+        content: `❌ Ocurrió un error generando el contenido multimedia: ${error.message}`,
+        isNewsValidated: true,
+        postsGenerated: false,
+      });
+    }
   }
 
   // Obtener posts de un chat específico

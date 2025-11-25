@@ -63,7 +63,7 @@ export class FacebookPublisherService implements ISocialMediaPublisher {
         };
       }
 
-      console.log('[Facebook] ✅ Publicado:', data.id || data.post_id);
+      console.log('[Facebook]  Publicado:', data.id || data.post_id);
       return {
         success: true,
         platform: 'facebook',

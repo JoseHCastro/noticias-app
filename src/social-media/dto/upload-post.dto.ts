@@ -1,14 +1,6 @@
 import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
-/**
- * Enum de plataformas soportadas para publicación manual
- */
-export enum SocialMediaPlatform {
-    FACEBOOK = 'facebook',
-    INSTAGRAM = 'instagram',
-    LINKEDIN = 'linkedin',
-    TIKTOK = 'tiktok',
-}
+import { SocialMediaPlatform } from '../enums/social-media-platform.enum';
 
 /**
  * DTO para validar datos de publicación manual

@@ -43,8 +43,27 @@ export class TiktokPublisherService implements ISocialMediaPublisher {
                 };
             }
 
+            let absolutePath = videoPath;
+            let isTempFile = false;
+
+            // Si es una URL, descargar primero
+            if (videoPath.startsWith('http')) {
+                console.log('[TikTok] Detectada URL remota, descargando video temporal...');
+                const tempFileName = `temp_tiktok_${Date.now()}.mp4`;
+                absolutePath = path.resolve(tempFileName);
+
+                const response = await fetch(videoPath);
+                if (!response.ok) throw new Error(`Error descargando video: ${response.statusText}`);
+
+                const buffer = await response.arrayBuffer();
+                fs.writeFileSync(absolutePath, Buffer.from(buffer));
+                isTempFile = true;
+                console.log('[TikTok] Video descargado en:', absolutePath);
+            } else {
+                absolutePath = path.resolve(videoPath);
+            }
+
             // Verificar que el archivo existe
-            const absolutePath = path.resolve(videoPath);
             if (!fs.existsSync(absolutePath)) {
                 console.error('[TikTok] Archivo no encontrado:', absolutePath);
                 return {
@@ -137,8 +156,8 @@ export class TiktokPublisherService implements ISocialMediaPublisher {
                 };
             }
 
-            console.log('[TikTok] ✅ Video subido exitosamente');
-            console.log('[TikTok] ✅ Publish ID:', publishId);
+            console.log('[TikTok]  Video subido exitosamente');
+            console.log('[TikTok]  Publish ID:', publishId);
 
             return {
                 success: true,

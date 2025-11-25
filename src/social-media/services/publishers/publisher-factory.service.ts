@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SocialMediaPlatform } from '../../dto/upload-post.dto';
+import { SocialMediaPlatform } from '../../enums/social-media-platform.enum';
 import { ISocialMediaPublisher } from '../../interfaces/publisher.interface';
 import { FacebookPublisherService } from './facebook-publisher.service';
 import { InstagramPublisherService } from './instagram-publisher.service';
@@ -32,6 +32,8 @@ export class PublisherFactoryService {
                 return this.instagramPublisher;
             case SocialMediaPlatform.LINKEDIN:
                 return this.linkedinPublisher;
+            case SocialMediaPlatform.TIKTOK:
+                return this.tiktokPublisher;
             default:
                 throw new Error(`Plataforma no soportada: ${platform}`);
         }

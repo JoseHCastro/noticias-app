@@ -40,7 +40,7 @@ export class InstagramPublisherService implements ISocialMediaPublisher {
             const formData1 = new URLSearchParams();
             formData1.append('caption', caption);
             formData1.append('access_token', this.facebookToken);
-            formData1.append('image_url', imageUrl);
+            formData1.append('image_url', imageUrl); // URL directa (Cloudinary)
 
             const response1 = await fetch(
                 `https://graph.facebook.com/v24.0/${this.instagramAccountId}/media`,
@@ -67,8 +67,42 @@ export class InstagramPublisherService implements ISocialMediaPublisher {
             const creationId = data1.id;
             console.log('[Instagram] Media container creado:', creationId);
 
-            // Esperar 10 segundos para que Instagram procese la imagen
-            await new Promise(resolve => setTimeout(resolve, 10000));
+            // Esperar a que el contenedor esté listo (Polling inteligente)
+            // Máximo 60 segundos (20 intentos * 3s)
+            let isReady = false;
+            let attempts = 0;
+            const maxAttempts = 20;
+
+            console.log('[Instagram] Esperando procesamiento de imagen...');
+
+            while (!isReady && attempts < maxAttempts) {
+                attempts++;
+                try {
+                    const statusResponse = await fetch(
+                        `https://graph.facebook.com/v24.0/${creationId}?fields=status_code&access_token=${this.facebookToken}`
+                    );
+                    const statusData = await statusResponse.json();
+                    const statusCode = statusData.status_code;
+
+                    console.log(`[Instagram] Estado contenedor (${attempts}/${maxAttempts}): ${statusCode}`);
+
+                    if (statusCode === 'FINISHED') {
+                        isReady = true;
+                    } else if (statusCode === 'ERROR') {
+                        throw new Error('Instagram reportó error procesando la imagen');
+                    } else {
+                        // Esperar 3 segundos antes del siguiente intento
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                    }
+                } catch (e) {
+                    console.warn('[Instagram] Error consultando estado, reintentando...', e.message);
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                }
+            }
+
+            if (!isReady) {
+                throw new Error('Timeout: El contenedor de Instagram no estuvo listo a tiempo (60s)');
+            }
 
             // PASO 2: Publicar el contenedor
             console.log('[Instagram] Publicando (Paso 2/2)...');
@@ -99,7 +133,7 @@ export class InstagramPublisherService implements ISocialMediaPublisher {
                 };
             }
 
-            console.log('[Instagram] ✅ Publicado:', data2.id);
+            console.log('[Instagram]  Publicado:', data2.id);
             return {
                 success: true,
                 platform: 'instagram',

@@ -77,7 +77,7 @@ export class LinkedinPublisherService implements ISocialMediaPublisher {
                 };
             }
 
-            console.log('[LinkedIn] ✅ Publicado:', postId);
+            console.log('[LinkedIn]  Publicado:', postId);
             return {
                 success: true,
                 platform: 'linkedin',

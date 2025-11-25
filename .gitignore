@@ -15,7 +15,7 @@ lerna-debug.log*
 
 # OS
 .DS_Store
-
+*.mp4
 # Tests
 /coverage
 /.nyc_output

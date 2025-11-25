@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Chat } from './chat.entity';
+import { Post } from './post.entity';
 
 export enum MessageRole {
   USER = 'user',
@@ -36,4 +37,7 @@ export class ChatMessage {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(() => Post, post => post.chatMessage, { cascade: true, onDelete: 'CASCADE' })
+  posts: Post[];
 }
