@@ -97,7 +97,7 @@ export class HeyGenService {
     }
 
     private async waitForVideoCompletion(videoId: string): Promise<string | undefined> {
-        const maxAttempts = 60; // 60 intentos * 5 seg = 5 minutos máx
+        const maxAttempts = 120; // 120 intentos * 5 seg = 10 minutos máx
         const intervalMs = 5000; // 5 segundos entre intentos
 
         for (let i = 0; i < maxAttempts; i++) {
